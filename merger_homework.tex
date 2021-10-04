@@ -1,0 +1,99 @@
+\documentclass[10pt,letter]{article}
+	% basic article document class
+	% use percent signs to make comments to yourself -- they will not show up.
+
+\usepackage{amsmath}
+\usepackage{amssymb}
+	% packages that allow mathematical formatting
+
+\usepackage{graphicx}
+	% package that allows you to include graphics
+
+\usepackage{setspace}
+	% package that allows you to change spacing
+
+\onehalfspacing
+	% text become 1.5 spaced
+
+\usepackage{fullpage}
+	% package that specifies normal margins
+
+\usepackage{listings}
+\usepackage{color}
+\definecolor{dkgreen}{rgb}{0,0.6,0}
+\definecolor{gray}{rgb}{0.5,0.5,0.5}
+\definecolor{mauve}{rgb}{0.58,0,0.82}
+\lstset{frame=tb,
+  language=Python,
+  aboveskip=3mm,
+  belowskip=3mm,
+  showstringspaces=false,
+  columns=flexible,
+  basicstyle={\small\ttfamily},
+  numbers=none,
+  numberstyle=\tiny\color{gray},
+  keywordstyle=\color{blue},
+  commentstyle=\color{dkgreen},
+  stringstyle=\color{mauve},
+  breaklines=true,
+  breakatwhitespace=true,
+  tabsize=3 }
+ % package for writing code
+
+\usepackage{enumitem}
+
+\begin{document}
+	% line of code telling latex that your document is beginning
+
+
+\title{ECON 600: Merger Homework}
+
+\author{Nicholas Wu}
+
+\date{Fall 2021}
+	% Note: when you omit this command, the current dateis automatically included
+
+\maketitle
+	% tells latex to follow your header (e.g., title, author) commands.
+
+All code is in Python.
+
+\section*{3.1}
+\begin{lstlisting}
+# x_jt, w_jt are absolute value of iid standard normal variables
+x = np.absolute(np.random.standard_normal(size=(J,T)))
+w = np.absolute(np.random.standard_normal(size=(J,T)))
+
+unobservable_mean = [0,0]
+unobservable_cov = [[1,0.25],[0.25,1]]
+unobservables = np.random.multivariate_normal(unobservable_mean, unobservable_cov, size=(J,T))
+xi = unobservables[:,:,0]
+omega = unobservables[:,:,1]
+\end{lstlisting}
+\section*{3.2}
+\begin{enumerate}[label=(\alph*)]
+\item \begin{enumerate}[label=(\roman*)]
+\item We first note that in the parameter specification,
+
+\[ \overline{\beta^{(2)}} = 4 \]
+\[ \overline{\beta^{(3)}} = 4 \]
+
+Hence, defining, $\sigma^{(2)} = \sigma^{(3)} = 1$, we have that
+\[ \beta^{(2)} = \overline{\beta^{(2)}} + \sigma^{(2)} \nu_{i}^{(2)}  \]
+\[ \beta^{(3)} = \overline{\beta^{(3)}} + \sigma^{(3)} \nu_{i}^{(3)}  \]
+where $\nu^{(2)}_i$ and $\nu^{(3)}_i$ are i.i.d standard normal.
+
+The multinomial logit choice probabilities are, conditional on all realized coefficients,
+\[ s_{0t} = \int \frac{1}{Z} \ d\Phi(\nu) \]
+\[ s_{1t} = \int\frac{\exp(x_{1t} + \overline{\beta^{(2)}} + \alpha p_{1t} + \xi_{1t} + \nu^{(2)}\sigma^{(2)} )}{Z} \ d\Phi(\nu)  \]
+\[ s_{2t} = \int\frac{\exp(x_{2t} + \overline{\beta^{(2)}} + \alpha p_{2t} + \xi_{2t} + \nu^{(2)}\sigma^{(2)} )}{Z} \ d\Phi(\nu)  \]
+\[ s_{3t} = \int\frac{\exp(x_{3t} + \overline{\beta^{(3)}} + \alpha p_{3t} + \xi_{3t} + \nu^{(3)}\sigma^{(3)} )}{Z} \ d\Phi(\nu)  \]
+\[ s_{4t} = \int\frac{\exp(x_{4t} + \overline{\beta^{(3)}} + \alpha p_{4t} + \xi_{4t} + \nu^{(3)}\sigma^{(3)} )}{Z} \ d\Phi(\nu)  \]
+where
+\[ Z = 1 + \exp(x_{1t} + \overline{\beta^{(2)}} + \alpha p_{1t} + \xi_{1t} + \nu^{(2)}\sigma^{(2)} ) + \exp(x_{2t} + \overline{\beta^{(2)}} + \alpha p_{2t} + \xi_{2t} + \nu^{(2)}\sigma^{(2)} )  \]
+\[+ \exp(x_{3t} + \overline{\beta^{(3)}} + \alpha p_{3t} + \xi_{3t} + \nu^{(3)}\sigma^{(3)} ) +\exp(x_{4t} + \overline{\beta^{(3)}} + \alpha p_{4t} + \xi_{4t} + \nu^{(3)}\sigma^{(3)} ) \]
+\end{enumerate}
+\end{enumerate}
+
+\end{document}
+	% line of code telling latex that your document is ending. If you leave this out, you'll get an error
