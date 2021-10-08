@@ -7,8 +7,9 @@
 	% packages that allow mathematical formatting
 
 \usepackage{graphicx}
+\renewcommand{\arraystretch}{1.5}
 	% package that allows you to include graphics
-
+\usepackage{multirow}
 \usepackage{setspace}
 	% package that allows you to change spacing
 
@@ -58,19 +59,9 @@
 
 All code is in Python.
 
-\section*{3.1}
-\begin{lstlisting}
-# x_jt, w_jt are absolute value of iid standard normal variables
-x = np.absolute(np.random.standard_normal(size=(J,T)))
-w = np.absolute(np.random.standard_normal(size=(J,T)))
-
-unobservable_mean = [0,0]
-unobservable_cov = [[1,0.25],[0.25,1]]
-unobservables = np.random.multivariate_normal(unobservable_mean, unobservable_cov, size=(J,T))
-xi = unobservables[:,:,0]
-omega = unobservables[:,:,1]
-\end{lstlisting}
-\section*{3.2}
+\section*{3: Generating Data}
+\paragraph{(1)} See code.
+\paragraph{(2)}
 \begin{enumerate}[label=(\alph*)]
 \item \begin{enumerate}[label=(\roman*)]
 \item We first note that in the parameter specification,
@@ -95,11 +86,43 @@ for $j > 0$. Where
 Then the derivatives are
 \[ \frac{\partial s_{jt}}{\partial p_j} = \int\frac{\alpha \exp(\delta_{jt} + \mu_{ijt}) Z - \exp(\delta_{jt} + \mu_{ijt})\left(\alpha\exp(\delta_{jt} + \mu_{ijt})\right)}{Z^2} \ d\Phi(\nu)  \]
 \[ \frac{\partial s_{jt}}{\partial p_k} = \int-\frac{\exp(\delta_{jt} + \mu_{ijt})\left(\alpha\exp(\delta_{kt} + \mu_{ikt})\right)}{Z^2} \ d\Phi(\nu)  \]
-
-
-
+\item See code.
+\item See code. We were happy with the precision provided by using $3000$ draws.
 \end{enumerate}
+\item Ok.
+\item See code.
 \end{enumerate}
+\paragraph{(3)} See code.
+\paragraph{(4)}
+\section*{4: Misspecified Models}
+\paragraph{(5)}
+\paragraph{(6)}
+\paragraph{(7)}
+\paragraph{(8)} 
 
+\section*{5: Estimating the Correctly Specified Model}
+(Note: some weird behavior exists because the parameters for $satellite$ and $wired$ are collinear).
+
+\paragraph{(9)} See Tables 1 and 2. We prefer the full model estimation (due to the better estimates).
+
+\paragraph{(10)} Let $\varepsilon_i$ denote the own-price elasticity of good $i$, and let\[ \mathcal{D}_{jk}  = - \frac{\partial s_{k} / \partial p_j}{\partial s_j / \partial p_j} \] The true and estimated matrix of own-price elasticities is in Table 3, and the true and estimated average diversion ratios are in Table 4 and Table 5, respectively.
+
+\input{table5_1}
+
+\input{table5_2}
+
+\input{table5_3}
+
+\input{table5_4}
+
+\input{table5_5}
+
+\section*{6: Merger Simulation}
+\paragraph{(11)} When two of the firms merge, prices will generically increase for the merged firm's goods. The firms all increase prices because the merged firm can price its own goods closer to monopoly pricing.
+\paragraph{(12)} See code.
+\paragraph{(13)} See Table 6.1. Intuitively, it makes sense that the merger of 1 and 2 results in larger price increases than 1 and 3; this is because merging 1 and 2 means the merged firm produces the only satellite products, and hence has a stronger incentive to raise prices of the satellite TV services.
+\paragraph{(14)} A reduction in marginal cost means that prices may not necessarily increase as a result of the merger, and hence can potentially improve efficiency; the merged firm can earn more profits to outweigh any consumer welfare decrease.
+\paragraph{(15)} See Table 6.1 for the post-merger prices with cost reduction. The net consumer welfare actually decreases as a result of the merger by $6.8384$. However, the firm manages to earn significantly more profits: specifically, the firm earns $69.3230$ more in profits. Hence the overall predicted welfare change is $62.4846$. We need to assume the markets have uniform measure of consumers here because previously all the computations were performed using in-market shares, which has no reliance on the size of the market. For net consumer welfare and profits, we have to aggregate across markets, and hence we need assumptions on the measure of consumers in each market.
+\input{table6_1}
 \end{document}
 	% line of code telling latex that your document is ending. If you leave this out, you'll get an error
