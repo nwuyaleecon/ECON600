@@ -1,4 +1,5 @@
 
+
     \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
 \prompt{In}{incolor}{1}{\boxspacing}
 \begin{Verbatim}[commandchars=\\\{\}]
@@ -324,16 +325,16 @@ HBox(children=(IntProgress(value=0, max=600), HTML(value='')))
             \begin{tcolorbox}[breakable, size=fbox, boxrule=.5pt, pad at break*=1mm, opacityfill=0]
 \prompt{Out}{outcolor}{13}{\boxspacing}
 \begin{Verbatim}[commandchars=\\\{\}]
-(array([0.25476331, 0.11264542, 0.40238602, 0.08461194]),
- array([0.0155214 , 0.0068629 , 0.01925936, 0.00404977]),
- array([[-0.32821669,  0.04728547,  0.19173592,  0.0080692 ],
-        [ 0.04728547, -0.11247089,  0.04448913,  0.00187232],
-        [ 0.19173592,  0.04448913, -0.39899463,  0.02498351],
-        [ 0.0080692 ,  0.00187232,  0.02498351, -0.04072375]]),
- array([[1.43367505e-02, 5.23103623e-03, 7.55852805e-03, 3.18100298e-04],
-        [5.23103623e-03, 6.90124310e-03, 1.75383072e-03, 7.38098833e-05],
-        [7.55852805e-03, 1.75383072e-03, 9.21634213e-03, 1.88713073e-03],
-        [3.18100298e-04, 7.38098833e-05, 1.88713073e-03, 1.77312278e-03]]))
+(array([0.25025446, 0.1106518 , 0.40782337, 0.08575528]),
+ array([0.01739545, 0.00769152, 0.02222747, 0.00467389]),
+ array([[-0.3235269 ,  0.04609141,  0.19011712,  0.00800107],
+        [ 0.04609141, -0.1104657 ,  0.04411352,  0.00185652],
+        [ 0.19011712,  0.04411352, -0.39876114,  0.02550838],
+        [ 0.00800107,  0.00185652,  0.02550838, -0.0412167 ]]),
+ array([[1.66922701e-02, 5.70831379e-03, 9.55360361e-03, 4.02062959e-04],
+        [5.70831379e-03, 7.73063888e-03, 2.21675482e-03, 9.32920224e-05],
+        [9.55360361e-03, 2.21675482e-03, 1.02488422e-02, 2.18776846e-03],
+        [4.02062959e-04, 9.32920224e-05, 2.18776846e-03, 2.04859466e-03]]))
 \end{Verbatim}
 \end{tcolorbox}
 
@@ -493,12 +494,12 @@ HBox(children=(IntProgress(value=0, max=600), HTML(value='')))
     \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{s4}\PY{l+s+s2}{\PYZdq{}}\PY{p}{:}\PY{n}{eq\PYZus{}shares}\PY{p}{[}\PY{l+m+mi}{3}\PY{p}{,}\PY{p}{:}\PY{p}{]}\PY{p}{,}
     \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{x1}\PY{l+s+s1}{\PYZsq{}}\PY{p}{:}\PY{n}{pd}\PY{o}{.}\PY{n}{Series}\PY{p}{(}\PY{n}{x}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{,}\PY{p}{:}\PY{p}{]}\PY{p}{)}\PY{p}{,}
     \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{w1}\PY{l+s+s1}{\PYZsq{}}\PY{p}{:}\PY{n}{pd}\PY{o}{.}\PY{n}{Series}\PY{p}{(}\PY{n}{w}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{,}\PY{p}{:}\PY{p}{]}\PY{p}{)}\PY{p}{,}
-    \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{x2}\PY{l+s+s1}{\PYZsq{}}\PY{p}{:}\PY{n}{pd}\PY{o}{.}\PY{n}{Series}\PY{p}{(}\PY{n}{x}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{,}\PY{p}{:}\PY{p}{]}\PY{p}{)}\PY{p}{,}
-    \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{w2}\PY{l+s+s1}{\PYZsq{}}\PY{p}{:}\PY{n}{pd}\PY{o}{.}\PY{n}{Series}\PY{p}{(}\PY{n}{w}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{,}\PY{p}{:}\PY{p}{]}\PY{p}{)}\PY{p}{,}
-    \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{x3}\PY{l+s+s1}{\PYZsq{}}\PY{p}{:}\PY{n}{pd}\PY{o}{.}\PY{n}{Series}\PY{p}{(}\PY{n}{x}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{,}\PY{p}{:}\PY{p}{]}\PY{p}{)}\PY{p}{,}
-    \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{w3}\PY{l+s+s1}{\PYZsq{}}\PY{p}{:}\PY{n}{pd}\PY{o}{.}\PY{n}{Series}\PY{p}{(}\PY{n}{w}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{,}\PY{p}{:}\PY{p}{]}\PY{p}{)}\PY{p}{,}
-    \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{x4}\PY{l+s+s1}{\PYZsq{}}\PY{p}{:}\PY{n}{pd}\PY{o}{.}\PY{n}{Series}\PY{p}{(}\PY{n}{x}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{,}\PY{p}{:}\PY{p}{]}\PY{p}{)}\PY{p}{,}
-    \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{w4}\PY{l+s+s1}{\PYZsq{}}\PY{p}{:}\PY{n}{pd}\PY{o}{.}\PY{n}{Series}\PY{p}{(}\PY{n}{w}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{,}\PY{p}{:}\PY{p}{]}\PY{p}{)}\PY{p}{,}
+    \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{x2}\PY{l+s+s1}{\PYZsq{}}\PY{p}{:}\PY{n}{pd}\PY{o}{.}\PY{n}{Series}\PY{p}{(}\PY{n}{x}\PY{p}{[}\PY{l+m+mi}{1}\PY{p}{,}\PY{p}{:}\PY{p}{]}\PY{p}{)}\PY{p}{,}
+    \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{w2}\PY{l+s+s1}{\PYZsq{}}\PY{p}{:}\PY{n}{pd}\PY{o}{.}\PY{n}{Series}\PY{p}{(}\PY{n}{w}\PY{p}{[}\PY{l+m+mi}{1}\PY{p}{,}\PY{p}{:}\PY{p}{]}\PY{p}{)}\PY{p}{,}
+    \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{x3}\PY{l+s+s1}{\PYZsq{}}\PY{p}{:}\PY{n}{pd}\PY{o}{.}\PY{n}{Series}\PY{p}{(}\PY{n}{x}\PY{p}{[}\PY{l+m+mi}{2}\PY{p}{,}\PY{p}{:}\PY{p}{]}\PY{p}{)}\PY{p}{,}
+    \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{w3}\PY{l+s+s1}{\PYZsq{}}\PY{p}{:}\PY{n}{pd}\PY{o}{.}\PY{n}{Series}\PY{p}{(}\PY{n}{w}\PY{p}{[}\PY{l+m+mi}{2}\PY{p}{,}\PY{p}{:}\PY{p}{]}\PY{p}{)}\PY{p}{,}
+    \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{x4}\PY{l+s+s1}{\PYZsq{}}\PY{p}{:}\PY{n}{pd}\PY{o}{.}\PY{n}{Series}\PY{p}{(}\PY{n}{x}\PY{p}{[}\PY{l+m+mi}{3}\PY{p}{,}\PY{p}{:}\PY{p}{]}\PY{p}{)}\PY{p}{,}
+    \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{w4}\PY{l+s+s1}{\PYZsq{}}\PY{p}{:}\PY{n}{pd}\PY{o}{.}\PY{n}{Series}\PY{p}{(}\PY{n}{w}\PY{p}{[}\PY{l+m+mi}{3}\PY{p}{,}\PY{p}{:}\PY{p}{]}\PY{p}{)}\PY{p}{,}
 
 \PY{p}{\PYZcb{}}\PY{p}{)}
 
@@ -526,7 +527,10 @@ HBox(children=(IntProgress(value=0, max=600), HTML(value='')))
             \begin{tcolorbox}[breakable, size=fbox, boxrule=.5pt, pad at break*=1mm, opacityfill=0]
 \prompt{Out}{outcolor}{19}{\boxspacing}
 \begin{Verbatim}[commandchars=\\\{\}]
-(0.82875469410635, 0.759261040211614, 0.7466930801949136, 0.7559006839752626)
+(0.9435061522877474,
+ 0.9480775331245905,
+ 0.9468682020346536,
+ 0.9477482549660268)
 \end{Verbatim}
 \end{tcolorbox}
 
@@ -540,10 +544,10 @@ HBox(children=(IntProgress(value=0, max=600), HTML(value='')))
             \begin{tcolorbox}[breakable, size=fbox, boxrule=.5pt, pad at break*=1mm, opacityfill=0]
 \prompt{Out}{outcolor}{20}{\boxspacing}
 \begin{Verbatim}[commandchars=\\\{\}]
-(0.6438126366055691,
- 0.5907181908148607,
- 0.4754674713240524,
- 0.5330545414402899)
+(0.7644818350345643,
+ 0.7983742915490801,
+ 0.7648735858119549,
+ 0.7737755052449837)
 \end{Verbatim}
 \end{tcolorbox}
 
@@ -590,7 +594,7 @@ Dep. Variable:                      y   R-squared:                       0.314
 Model:                            OLS   Adj. R-squared:                  0.313
 Method:                 Least Squares   F-statistic:                     365.4
 Date:                Wed, 13 Oct 2021   Prob (F-statistic):          2.09e-195
-Time:                        20:01:01   Log-Likelihood:                -3033.1
+Time:                        21:30:31   Log-Likelihood:                -3033.1
 No. Observations:                2400   AIC:                             6074.
 Df Residuals:                    2396   BIC:                             6097.
 Df Model:                           3
@@ -643,7 +647,7 @@ Dep. Variable:              dependent   R-squared:                      0.1841
 Estimator:                    IV-2SLS   Adj. R-squared:                 0.1831
 No. Observations:                2400   F-statistic:                    2007.7
 Date:                Wed, Oct 13 2021   P-value (F-stat)                0.0000
-Time:                        20:01:01   Distribution:                  chi2(4)
+Time:                        21:30:31   Distribution:                  chi2(4)
 Cov. Estimator:                robust
 
                              Parameter Estimates
@@ -701,7 +705,7 @@ Dep. Variable:              dependent   R-squared:                      0.3589
 Estimator:                    IV-2SLS   Adj. R-squared:                 0.3576
 No. Observations:                2400   F-statistic:                    2635.4
 Date:                Wed, Oct 13 2021   P-value (F-stat)                0.0000
-Time:                        20:01:01   Distribution:                  chi2(6)
+Time:                        21:30:31   Distribution:                  chi2(6)
 Cov. Estimator:                robust
 
                                     Parameter Estimates
@@ -993,7 +997,7 @@ Improvement   Gradient Norm             Theta
 
 Optimization completed after 00:00:02.
 Computing the Hessian and and updating the weighting matrix {\ldots}
-Computed results after 00:00:08.
+Computed results after 00:00:10.
 
 Problem Results Summary:
 ================================================================================
@@ -1022,7 +1026,7 @@ Improvement   Gradient Norm             Theta
 
 Optimization completed after 00:00:01.
 Computing the Hessian and estimating standard errors {\ldots}
-Computed results after 00:00:06.
+Computed results after 00:00:07.
 
 Problem Results Summary:
 ================================================================================
@@ -1043,7 +1047,7 @@ Cumulative Statistics:
 Computation  Optimizer  Optimization   Objective   Fixed Point  Contraction
    Time      Converged   Iterations   Evaluations  Iterations   Evaluations
 -----------  ---------  ------------  -----------  -----------  -----------
- 00:00:16       Yes          0             4          4478         14376
+ 00:00:20       Yes          0             4          4478         14376
 ===========================================================================
 
 Nonlinear Coefficient Estimates (Robust SEs in Parentheses):
@@ -1151,9 +1155,9 @@ Improvement   Gradient Norm             Theta
  1         1             7          3111         9787         0
 -8.257676E+16                 +4.869321E+09  +2.828932E-01, +2.828932E-01
 
-Optimization completed after 00:00:09.
+Optimization completed after 00:00:11.
 Computing the Hessian and and updating the weighting matrix {\ldots}
-Computed results after 00:00:07.
+Computed results after 00:00:08.
 
 Problem Results Summary:
 ================================================================================
@@ -1203,7 +1207,7 @@ Cumulative Statistics:
 Computation  Optimizer  Optimization   Objective   Fixed Point  Contraction
    Time      Converged   Iterations   Evaluations  Iterations   Evaluations
 -----------  ---------  ------------  -----------  -----------  -----------
- 00:00:22       Yes          2            10          19995        63817
+ 00:00:25       Yes          2            10          19995        63817
 ===========================================================================
 
 Nonlinear Coefficient Estimates (Robust SEs in Parentheses):
@@ -1340,7 +1344,7 @@ Improvement   Gradient Norm                     Theta
 
 Optimization completed after 00:00:03.
 Computing the Hessian and and updating the weighting matrix {\ldots}
-Computed results after 00:00:20.
+Computed results after 00:00:24.
 
 Problem Results Summary:
 ================================================================================
@@ -1371,7 +1375,7 @@ Improvement   Gradient Norm                     Theta
 
 Optimization completed after 00:00:02.
 Computing the Hessian and estimating standard errors {\ldots}
-Computed results after 00:00:15.
+Computed results after 00:00:18.
 
 Problem Results Summary:
 ================================================================================
@@ -1392,7 +1396,7 @@ Cumulative Statistics:
 Computation  Optimizer  Optimization   Objective   Fixed Point  Contraction
    Time      Converged   Iterations   Evaluations  Iterations   Evaluations
 -----------  ---------  ------------  -----------  -----------  -----------
- 00:00:40       Yes          0             4          4478         14376
+ 00:00:47       Yes          0             4          4478         14376
 ===========================================================================
 
 Nonlinear Coefficient Estimates (Robust SEs in Parentheses):
@@ -1422,14 +1426,14 @@ Gamma Estimates (Robust SEs in Parentheses):
 (+1.955098E-02)  (+1.085774E-02)
 ================================
 Computing optimal instruments for theta {\ldots}
-Computed optimal instruments after 00:00:03.
+Computed optimal instruments after 00:00:04.
 
 Optimal Instrument Results Summary:
 =================================================
 Computation  Error Term  Fixed Point  Contraction
    Time        Draws     Iterations   Evaluations
 -----------  ----------  -----------  -----------
- 00:00:03        1          9494         9494
+ 00:00:04        1          9494         9494
 =================================================
 Re-creating the problem {\ldots}
 Re-created the problem after 00:00:00.
@@ -1565,9 +1569,9 @@ Improvement   Gradient Norm                     Theta
 -1.187810E+04                 +3.797859E+02  +8.887268E-01, +8.887274E-01,
 -2.200117E+00
 
-Optimization completed after 00:00:44.
+Optimization completed after 00:00:50.
 Computing the Hessian and and updating the weighting matrix {\ldots}
-Computed results after 00:00:20.
+Computed results after 00:00:22.
 
 Problem Results Summary:
 ================================================================================
@@ -1632,9 +1636,9 @@ Improvement   Gradient Norm                     Theta
 +2.113104E+00  +5.240253E-14  +2.852862E-09  +1.168790E+00, +1.180292E+00,
 -2.031252E+00
 
-Optimization completed after 00:00:36.
+Optimization completed after 00:00:41.
 Computing the Hessian and estimating standard errors {\ldots}
-Computed results after 00:00:22.
+Computed results after 00:00:23.
 
 Problem Results Summary:
 ================================================================================
@@ -1655,7 +1659,7 @@ Cumulative Statistics:
 Computation  Optimizer  Optimization   Objective   Fixed Point  Contraction
    Time      Converged   Iterations   Evaluations  Iterations   Evaluations
 -----------  ---------  ------------  -----------  -----------  -----------
- 00:02:02       Yes          14           31         118556       364494
+ 00:02:16       Yes          14           31         118556       364494
 ===========================================================================
 
 Nonlinear Coefficient Estimates (Robust SEs in Parentheses):
@@ -1824,7 +1828,7 @@ Solving for equilibrium prices {\ldots}
 Finished after 00:00:03.
 
 Solving for equilibrium prices {\ldots}
-Finished after 00:00:02.
+Finished after 00:00:03.
 
     \end{Verbatim}
 
@@ -1959,7 +1963,7 @@ Computing profits {\ldots}
 Finished after 00:00:01.
 
 Computing profits {\ldots}
-Finished after 00:00:00.
+Finished after 00:00:01.
 
     \end{Verbatim}
 
@@ -1993,7 +1997,3 @@ Finished after 00:00:00.
 62.6191820309842
 \end{Verbatim}
 \end{tcolorbox}
-
-
-
-    % Add a bibliography block to the postdoc

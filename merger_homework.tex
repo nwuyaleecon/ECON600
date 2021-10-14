@@ -62,7 +62,7 @@
 All code is in Python.
 
 \section*{3: Generating Data}
-\paragraph{(1)} See code.
+\paragraph{(1)} See code, boxes [4] and [5].
 \paragraph{(2)}
 \begin{enumerate}[label=(\alph*)]
 \item \begin{enumerate}[label=(\roman*)]
@@ -88,18 +88,23 @@ for $j > 0$. Where
 Then the derivatives are
 \[ \frac{\partial s_{jt}}{\partial p_j} = \int\frac{\alpha \exp(\delta_{jt} + \mu_{ijt}) Z - \exp(\delta_{jt} + \mu_{ijt})\left(\alpha\exp(\delta_{jt} + \mu_{ijt})\right)}{Z^2} \ d\Phi(\nu)  \]
 \[ \frac{\partial s_{jt}}{\partial p_k} = \int-\frac{\exp(\delta_{jt} + \mu_{ijt})\left(\alpha\exp(\delta_{kt} + \mu_{ikt})\right)}{Z^2} \ d\Phi(\nu)  \]
-\item See code.
-\item See code. We were happy with the precision provided by using $3000$ draws.
+\item See code. The Monte-Carlo simulated derivatives are implemented in block [6].
+\item See code, block [8]. We were happy with the precision provided by using $3000$ draws.
 \end{enumerate}
 \item Ok.
-\item See code.
+\item \begin{enumerate}[label=(\roman*)]
+  \item See code block [12]. All calls to fsolve converge.
+  \item See code blocks [14], [15]. The maximum difference in any price estimate and any share estimate between the two methods is on the order of $10^{-9}$ (quite small). We'll just take the fsolve results, since these two seem close anyway.
 \end{enumerate}
-\paragraph{(3)} See code.
-\paragraph{(4)} I am pretty happy with the variation provided by these simulated values.
+\end{enumerate}
+\paragraph{(3)} See code block [17]. Data is placed into the required format.
+\paragraph{(4)} I am pretty happy with the variation provided by these simulated values. By regressing prices and shares on the within-market observables, we get decent adjusted $R^2$ values on the regressions on prices (around 0.9) and on shares (around 0.78), as seen in blocks [19], [20]. This suggests that there is enough variation, for my taste at least.
+\pagebreak
 \section*{4: Misspecified Models}
-\paragraph{(5)} See code.
-\paragraph{(6)} See code.
-\paragraph{(7)}
+\input{table4_1}
+\paragraph{(5)} See code block [22]. Parameter estimates are in Table 4.1.
+\paragraph{(6)} See code block [23]. Parameter estimates are in Table 4.1.
+\paragraph{(7)} See code block [24]. Parameter estimates are in Table 4.1. Intuitively, the nested logit model is misspecified because the parameters inherently don't allow for the coefficient heterogeneity of the random coefficients model. Even if we allow for group-specific $\sigma$ parameters, these are merely band-aids to try to fix the substitution patterns (price derivatives of shares) but instrumenting and allowing for these nests do not address the fundamental misspecification of the plain logit model.
 \paragraph{(8)} We analytically compute the derivatives in the nested logit model. Let
 \[ \delta_{jt} = \beta^{(1)} x_{jt} + \overline{\beta^{(2)}}satellite_j +\overline{\beta^{(3)}}wired_j + \alpha p_{jt} \]
 Then
@@ -142,14 +147,21 @@ The outside-group price derivative is
 
 And the outside-option derivative is
 \[ \frac{\partial}{\partial p_j} s_0(\delta_t, \sigma) = - \alpha s_0(\delta_t, \sigma) s_j(\delta_t, \sigma)\]
+See code blocks [25] and [26] for computation of the derivatives. Results are displayed in blocks [27], [28] and in Table 4.2, 4.3, and 4.4.
 
+\input{table4_2}
+
+\input{table4_3}
+
+\input{table4_4}
+\clearpage
 \section*{5: Estimating the Correctly Specified Model}
-(Note: some weird behavior exists because the parameters for $satellite$ and $wired$ are collinear).
+Code is in blocks [30-34].
 
-\paragraph{(9)} See Tables 1 and 2. We prefer the full model estimation (due to the better estimates).
+\paragraph{(9)} See Tables 5.1 and 5.2. We prefer the full model estimation due to the better estimates and more reliable convergence.
 
 \paragraph{(10)} Let $\varepsilon_i$ denote the own-price elasticity of good $i$, and let\[ \mathcal{D}_{jk}  = - \frac{\partial s_{k} / \partial p_j}{\partial s_j / \partial p_j} \] The true and estimated matrix of own-price elasticities is in Table 3, and the true and estimated average diversion ratios are in Table 4 and Table 5, respectively.
-
+\clearpage
 \input{table5_1}
 
 \input{table5_2}
@@ -160,13 +172,18 @@ And the outside-option derivative is
 
 \input{table5_5}
 
+\clearpage
+
 \section*{6: Merger Simulation}
 \paragraph{(11)} When two of the firms merge, prices will generically increase for the merged firm's goods. The firms all increase prices because the merged firm can price its own goods closer to monopoly pricing.
 \paragraph{(12)} See code.
-\paragraph{(13)} See Table 6.1. Intuitively, it makes sense that the merger of 1 and 2 results in larger price increases than 1 and 3; this is because merging 1 and 2 means the merged firm produces the only satellite products, and hence has a stronger incentive to raise prices of the satellite TV services.
-\paragraph{(14)} A reduction in marginal cost means that prices may not necessarily increase as a result of the merger, and hence can potentially improve efficiency; the merged firm can earn more profits to outweigh any consumer welfare decrease.
-\paragraph{(15)} See Table 6.1 for the post-merger prices with cost reduction. The net consumer welfare actually decreases as a result of the merger by $6.8384$. However, the firm manages to earn significantly more profits: specifically, the firm earns $69.3230$ more in profits. Hence the overall predicted welfare change is $62.4846$. We need to assume the markets have uniform measure of consumers here because previously all the computations were performed using in-market shares, which has no reliance on the size of the market. For net consumer welfare and profits, we have to aggregate across markets, and hence we need assumptions on the measure of consumers in each market.
+\paragraph{(13)} See Table 6.1. Intuitively, it makes sense that the merger of 1 and 2 results in larger price increases than 1 and 3; this is because merging 1 and 2 means the merged firm has a submonopoly on satellite products, and hence has a stronger incentive to raise prices of the satellite TV services.
+\paragraph{(14)} A reduction in marginal cost means that prices may not necessarily increase as a result of the merger, and hence can potentially improve efficiency; the merged firm can earn more profits to outweigh any consumer welfare decrease. If the marginal cost decrease is very large, it is even possible for consumer welfare to also increase.
+\paragraph{(15)} Code is in blocks [46-52]. See Table 6.1 for the post-merger prices with cost reduction. The net consumer welfare actually decreases as a result of the merger by $6.8384$. However, the firm manages to earn significantly more profits: specifically, the firm earns $69.3230$ more in profits. Hence the overall predicted welfare change is $62.4846$. We need to assume the markets have uniform measure of consumers here because previously all the computations were performed using in-market shares, which has no reliance on the size of the market. For net consumer welfare and profits, we have to aggregate across markets, and hence we need assumptions on the measure of consumers in each market.
+\clearpage
 \input{table6_1}
+
+\clearpage
 
 \section*{Appendix: Code}
 \input{merger_code}
