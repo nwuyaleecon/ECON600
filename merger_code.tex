@@ -325,16 +325,16 @@ HBox(children=(IntProgress(value=0, max=600), HTML(value='')))
             \begin{tcolorbox}[breakable, size=fbox, boxrule=.5pt, pad at break*=1mm, opacityfill=0]
 \prompt{Out}{outcolor}{13}{\boxspacing}
 \begin{Verbatim}[commandchars=\\\{\}]
-(array([0.25025446, 0.1106518 , 0.40782337, 0.08575528]),
- array([0.01739545, 0.00769152, 0.02222747, 0.00467389]),
- array([[-0.3235269 ,  0.04609141,  0.19011712,  0.00800107],
-        [ 0.04609141, -0.1104657 ,  0.04411352,  0.00185652],
-        [ 0.19011712,  0.04411352, -0.39876114,  0.02550838],
-        [ 0.00800107,  0.00185652,  0.02550838, -0.0412167 ]]),
- array([[1.66922701e-02, 5.70831379e-03, 9.55360361e-03, 4.02062959e-04],
-        [5.70831379e-03, 7.73063888e-03, 2.21675482e-03, 9.32920224e-05],
-        [9.55360361e-03, 2.21675482e-03, 1.02488422e-02, 2.18776846e-03],
-        [4.02062959e-04, 9.32920224e-05, 2.18776846e-03, 2.04859466e-03]]))
+(array([0.25507194, 0.11278189, 0.40064946, 0.08424679]),
+ array([0.01488757, 0.00658265, 0.0197216 , 0.00414697]),
+ array([[-0.32679671,  0.04788997,  0.18986696,  0.00799054],
+        [ 0.04788997, -0.11260564,  0.04405547,  0.00185407],
+        [ 0.18986696,  0.04405547, -0.39812249,  0.02482909],
+        [ 0.00799054,  0.00185407,  0.02482909, -0.04053913]]),
+ array([[1.43467614e-02, 5.21389120e-03, 8.04643656e-03, 3.38633904e-04],
+        [5.21389120e-03, 6.62030404e-03, 1.86704177e-03, 7.85743652e-05],
+        [8.04643656e-03, 1.86704177e-03, 1.17833364e-02, 1.96219771e-03],
+        [3.38633904e-04, 7.85743652e-05, 1.96219771e-03, 1.82593864e-03]]))
 \end{Verbatim}
 \end{tcolorbox}
 
@@ -594,7 +594,7 @@ Dep. Variable:                      y   R-squared:                       0.314
 Model:                            OLS   Adj. R-squared:                  0.313
 Method:                 Least Squares   F-statistic:                     365.4
 Date:                Wed, 13 Oct 2021   Prob (F-statistic):          2.09e-195
-Time:                        21:30:31   Log-Likelihood:                -3033.1
+Time:                        21:46:41   Log-Likelihood:                -3033.1
 No. Observations:                2400   AIC:                             6074.
 Df Residuals:                    2396   BIC:                             6097.
 Df Model:                           3
@@ -647,7 +647,7 @@ Dep. Variable:              dependent   R-squared:                      0.1841
 Estimator:                    IV-2SLS   Adj. R-squared:                 0.1831
 No. Observations:                2400   F-statistic:                    2007.7
 Date:                Wed, Oct 13 2021   P-value (F-stat)                0.0000
-Time:                        21:30:31   Distribution:                  chi2(4)
+Time:                        21:46:41   Distribution:                  chi2(4)
 Cov. Estimator:                robust
 
                              Parameter Estimates
@@ -705,7 +705,7 @@ Dep. Variable:              dependent   R-squared:                      0.3589
 Estimator:                    IV-2SLS   Adj. R-squared:                 0.3576
 No. Observations:                2400   F-statistic:                    2635.4
 Date:                Wed, Oct 13 2021   P-value (F-stat)                0.0000
-Time:                        21:30:31   Distribution:                  chi2(6)
+Time:                        21:46:41   Distribution:                  chi2(6)
 Cov. Estimator:                robust
 
                                     Parameter Estimates
@@ -997,7 +997,7 @@ Improvement   Gradient Norm             Theta
 
 Optimization completed after 00:00:02.
 Computing the Hessian and and updating the weighting matrix {\ldots}
-Computed results after 00:00:10.
+Computed results after 00:00:09.
 
 Problem Results Summary:
 ================================================================================
@@ -1026,7 +1026,7 @@ Improvement   Gradient Norm             Theta
 
 Optimization completed after 00:00:01.
 Computing the Hessian and estimating standard errors {\ldots}
-Computed results after 00:00:07.
+Computed results after 00:00:06.
 
 Problem Results Summary:
 ================================================================================
@@ -1047,7 +1047,7 @@ Cumulative Statistics:
 Computation  Optimizer  Optimization   Objective   Fixed Point  Contraction
    Time      Converged   Iterations   Evaluations  Iterations   Evaluations
 -----------  ---------  ------------  -----------  -----------  -----------
- 00:00:20       Yes          0             4          4478         14376
+ 00:00:19       Yes          0             4          4478         14376
 ===========================================================================
 
 Nonlinear Coefficient Estimates (Robust SEs in Parentheses):
@@ -1101,7 +1101,7 @@ X2: Nonlinear Characteristics  satellite  wired
 \prompt{In}{incolor}{31}{\boxspacing}
 \begin{Verbatim}[commandchars=\\\{\}]
 \PY{c+c1}{\PYZsh{} now we resolve the problem given the optimal instruments}
-\PY{n}{demand\PYZus{}problem\PYZus{}results} \PY{o}{=} \PY{n}{demand\PYZus{}problem\PYZus{}w\PYZus{}instruments}\PY{o}{.}\PY{n}{solve}\PY{p}{(}\PY{n}{sigma}\PY{o}{=}\PY{l+m+mf}{0.99}\PY{o}{*}\PY{n}{np}\PY{o}{.}\PY{n}{identity}\PY{p}{(}\PY{l+m+mi}{2}\PY{p}{)}\PY{p}{,}\PY{n}{optimization}\PY{o}{=}\PY{n}{pyblp}\PY{o}{.}\PY{n}{Optimization}\PY{p}{(}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{l\PYZhy{}bfgs\PYZhy{}b}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{p}{\PYZob{}}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{maxls}\PY{l+s+s1}{\PYZsq{}}\PY{p}{:} \PY{l+m+mi}{30}\PY{p}{\PYZcb{}}\PY{p}{)}\PY{p}{)}
+\PY{n}{demand\PYZus{}problem\PYZus{}results} \PY{o}{=} \PY{n}{demand\PYZus{}problem\PYZus{}w\PYZus{}instruments}\PY{o}{.}\PY{n}{solve}\PY{p}{(}\PY{n}{sigma}\PY{o}{=}\PY{n}{np}\PY{o}{.}\PY{n}{identity}\PY{p}{(}\PY{l+m+mi}{2}\PY{p}{)}\PY{p}{,}\PY{n}{optimization}\PY{o}{=}\PY{n}{pyblp}\PY{o}{.}\PY{n}{Optimization}\PY{p}{(}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{l\PYZhy{}bfgs\PYZhy{}b}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{p}{\PYZob{}}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{maxls}\PY{l+s+s1}{\PYZsq{}}\PY{p}{:} \PY{l+m+mi}{30}\PY{p}{\PYZcb{}}\PY{p}{)}\PY{p}{)}
 \end{Verbatim}
 \end{tcolorbox}
 
@@ -1112,8 +1112,8 @@ Nonlinear Coefficient Initial Values:
 =======================================
  Sigma:      satellite        wired
 ---------  -------------  -------------
-satellite  +9.900000E-01
-  wired    +0.000000E+00  +9.900000E-01
+satellite  +1.000000E+00
+  wired    +0.000000E+00  +1.000000E+00
 =======================================
 
 Nonlinear Coefficient Lower Bounds:
@@ -1140,24 +1140,58 @@ Step   Iterations   Evaluations  Iterations   Evaluations  Shares       Value
 Improvement   Gradient Norm             Theta
 ----  ------------  -----------  -----------  -----------  -------
 -------------  -------------  -------------  ----------------------------
- 1         0             1          4441         13671        0
--4.871846E+16                 +6.644277E+09  +9.900000E-01, +9.900000E-01
- 1         0             2          3111         9787         0
--8.257676E+16  +3.385830E+16  +4.869321E+09  +2.828932E-01, +2.828932E-01
- 1         1             3            0           600         0
+ 1         0             1          4478         13776        0
+-3.405574E+16                 +7.477739E+09  +1.000000E+00, +1.000000E+00
+ 1         0             2          3138         9873         0
+-1.614926E+16                 +4.646293E+09  +2.928932E-01, +2.928932E-01
+ 1         0             3          4479         13774        0
+-3.112526E+16                 +7.170115E+09  +9.999999E-01, +9.999999E-01
+ 1         0             4          4478         13776        0
+-3.405574E+16                 +7.477739E+09  +1.000000E+00, +1.000000E+00
+ 1         0             5          4479         13770        0
+-3.719706E+16  +3.141318E+15  +9.203889E+09  +1.000000E+00, +1.000000E+00
+ 1         0             6          4478         13763        0
+-1.673163E+16                 +1.565455E+10  +1.000000E+00, +1.000000E+00
+ 1         0             7          4479         13770        0
+-3.719706E+16                 +9.203889E+09  +1.000000E+00, +1.000000E+00
+ 1         0             8          4478         13767        0
+-5.568769E+16  +1.849063E+16  +1.328610E+10  +1.000000E+00, +1.000000E+00
+ 1         0             9          4480         13771        0
+-9.254591E+16  +3.685823E+16  +9.203889E+09  +1.000000E+00, +1.000000E+00
+ 1         1            10            0           600         0
 -4.918336E+16                 +5.388201E-08  +0.000000E+00, +0.000000E+00
- 1         1             4          3112         9794         0
--3.109528E+16                 +5.839840E+09  +2.828932E-01, +2.828932E-01
- 1         1             5          3111         9787         0
--8.257676E+16                 +4.869321E+09  +2.828932E-01, +2.828932E-01
- 1         1             6          3109         9791         0
--4.857029E+16                 +3.903649E+09  +2.828932E-01, +2.828932E-01
- 1         1             7          3111         9787         0
--8.257676E+16                 +4.869321E+09  +2.828932E-01, +2.828932E-01
+ 1         1            11          4476         13755        0
+-1.505351E+15                 +5.980943E+09  +9.999999E-01, +9.999999E-01
+ 1         1            12          4480         13771        0
+-9.254591E+16                 +9.203889E+09  +1.000000E+00, +1.000000E+00
+ 1         1            13          4478         13767        0
+-5.418730E+16                 +1.634694E+10  +9.999999E-01, +9.999999E-01
+ 1         1            14          4480         13771        0
+-9.254591E+16                 +9.203889E+09  +1.000000E+00, +1.000000E+00
+ 1         1            15          4476         13757        0
+-4.300528E+16                 +8.869213E+09  +9.999999E-01, +9.999999E-01
+ 1         1            16          4480         13771        0
+-9.254591E+16                 +9.203889E+09  +1.000000E+00, +1.000000E+00
+ 1         1            17          4478         13749        0
+-3.726734E+16                 +8.877591E+09  +1.000000E+00, +1.000000E+00
+ 1         1            18          4480         13771        0
+-9.254591E+16                 +9.203889E+09  +1.000000E+00, +1.000000E+00
+ 1         1            19          4476         13769        0
+-7.372143E+16                 +7.178493E+09  +1.000000E+00, +1.000000E+00
+ 1         1            20          4480         13771        0
+-9.254591E+16                 +9.203889E+09  +1.000000E+00, +1.000000E+00
+ 1         1            21          4476         13761        0
+-7.524827E+13                 +1.584179E+10  +1.000000E+00, +1.000000E+00
+ 1         1            22          4480         13771        0
+-9.254591E+16                 +9.203889E+09  +1.000000E+00, +1.000000E+00
+ 1         1            23          4478         13759        0
+-2.936130E+16                 +9.203889E+09  +1.000000E+00, +1.000000E+00
+ 1         1            24          4480         13771        0
+-9.254591E+16                 +9.203889E+09  +1.000000E+00, +1.000000E+00
 
-Optimization completed after 00:00:11.
+Optimization completed after 00:00:46.
 Computing the Hessian and and updating the weighting matrix {\ldots}
-Computed results after 00:00:08.
+Computed results after 00:00:10.
 
 Problem Results Summary:
 ================================================================================
@@ -1168,7 +1202,7 @@ Step      Value      Gradient Norm  Min Eigenvalue   Max Eigenvalue   Shares
 Condition Number
 ----  -------------  -------------  ---------------  ---------------  -------
 ----------------
- 1    -8.257676E+16  +4.869321E+09   -2.349511E+17    -2.874343E+16      0
+ 1    -9.254591E+16  +9.203889E+09   +2.815004E+16    +4.333131E+17      0
 +8.124302E+16
 ================================================================================
 ===============
@@ -1182,11 +1216,11 @@ Improvement   Gradient Norm             Theta
 ----  ------------  -----------  -----------  -----------  -------
 -------------  -------------  -------------  ----------------------------
  2         0             1            0           600         0
-+6.537189E-13                 +1.091195E-12  +2.828932E-01, +2.828932E-01
++5.587583E-13                 +2.529328E-12  +1.000000E+00, +1.000000E+00
 
 Optimization completed after 00:00:01.
 Computing the Hessian and estimating standard errors {\ldots}
-Computed results after 00:00:05.
+Computed results after 00:00:07.
 
 Problem Results Summary:
 ================================================================================
@@ -1197,8 +1231,8 @@ Step      Value      Gradient Norm  Min Eigenvalue   Max Eigenvalue   Shares
 Condition Number  Condition Number
 ----  -------------  -------------  ---------------  ---------------  -------
 ----------------  -----------------
- 2    +6.537189E-13  +1.091195E-12   -2.784026E-12    +4.671904E-12      0
-+2.505258E+17      +1.548412E+17
+ 2    +5.587583E-13  +2.529328E-12   -2.221919E-13    +1.115538E-11      0
++2.152606E+17      +1.901645E+18
 ================================================================================
 ==================================
 
@@ -1207,26 +1241,26 @@ Cumulative Statistics:
 Computation  Optimizer  Optimization   Objective   Fixed Point  Contraction
    Time      Converged   Iterations   Evaluations  Iterations   Evaluations
 -----------  ---------  ------------  -----------  -----------  -----------
- 00:00:25       Yes          2            10          19995        63817
+ 00:01:04       Yes          2            27         101665       313954
 ===========================================================================
 
 Nonlinear Coefficient Estimates (Robust SEs in Parentheses):
 ===========================================
  Sigma:       satellite          wired
 ---------  ---------------  ---------------
-satellite   +2.828932E-01
-           (+1.012906E+00)
+satellite   +1.000000E+00
+           (+3.071605E-01)
 
-  wired     +0.000000E+00    +2.828932E-01
-                            (+1.039249E+00)
+  wired     +0.000000E+00    +1.000000E+00
+                            (+3.172754E-01)
 ===========================================
 
 Beta Estimates (Robust SEs in Parentheses):
 ==================================================================
     prices              x            satellite          wired
 ---------------  ---------------  ---------------  ---------------
- +1.217125E+00    +5.763916E-01    -4.337985E+00    -4.407183E+00
-(+2.509104E-02)  (+5.076744E-02)  (+1.455546E-01)  (+1.485866E-01)
+ -1.852408E+00    +9.872258E-01    +3.615042E+00    +3.622520E+00
+(+1.867589E-02)  (+4.741592E-02)  (+4.524844E-02)  (+4.691815E-02)
 ==================================================================
     \end{Verbatim}
 
@@ -1396,7 +1430,7 @@ Cumulative Statistics:
 Computation  Optimizer  Optimization   Objective   Fixed Point  Contraction
    Time      Converged   Iterations   Evaluations  Iterations   Evaluations
 -----------  ---------  ------------  -----------  -----------  -----------
- 00:00:47       Yes          0             4          4478         14376
+ 00:00:48       Yes          0             4          4478         14376
 ===========================================================================
 
 Nonlinear Coefficient Estimates (Robust SEs in Parentheses):
@@ -1569,7 +1603,7 @@ Improvement   Gradient Norm                     Theta
 -1.187810E+04                 +3.797859E+02  +8.887268E-01, +8.887274E-01,
 -2.200117E+00
 
-Optimization completed after 00:00:50.
+Optimization completed after 00:00:52.
 Computing the Hessian and and updating the weighting matrix {\ldots}
 Computed results after 00:00:22.
 
@@ -1636,7 +1670,7 @@ Improvement   Gradient Norm                     Theta
 +2.113104E+00  +5.240253E-14  +2.852862E-09  +1.168790E+00, +1.180292E+00,
 -2.031252E+00
 
-Optimization completed after 00:00:41.
+Optimization completed after 00:00:44.
 Computing the Hessian and estimating standard errors {\ldots}
 Computed results after 00:00:23.
 
@@ -1659,7 +1693,7 @@ Cumulative Statistics:
 Computation  Optimizer  Optimization   Objective   Fixed Point  Contraction
    Time      Converged   Iterations   Evaluations  Iterations   Evaluations
 -----------  ---------  ------------  -----------  -----------  -----------
- 00:02:16       Yes          14           31         118556       364494
+ 00:02:21       Yes          14           31         118556       364494
 ===========================================================================
 
 Nonlinear Coefficient Estimates (Robust SEs in Parentheses):
@@ -1957,13 +1991,13 @@ Finished after 00:00:01.
 
     \begin{Verbatim}[commandchars=\\\{\}]
 Computing shares {\ldots}
+Finished after 00:00:01.
+
+Computing profits {\ldots}
+Finished after 00:00:01.
+
+Computing profits {\ldots}
 Finished after 00:00:00.
-
-Computing profits {\ldots}
-Finished after 00:00:01.
-
-Computing profits {\ldots}
-Finished after 00:00:01.
 
     \end{Verbatim}
 
