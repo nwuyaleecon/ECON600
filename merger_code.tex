@@ -1,0 +1,1999 @@
+
+    \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\prompt{In}{incolor}{1}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{k+kn}{import} \PY{n+nn}{numpy} \PY{k}{as} \PY{n+nn}{np}
+\PY{k+kn}{from} \PY{n+nn}{scipy}\PY{n+nn}{.}\PY{n+nn}{optimize} \PY{k}{import} \PY{n}{fsolve}\PY{p}{,} \PY{n}{fixed\PYZus{}point}
+\PY{k+kn}{from} \PY{n+nn}{matplotlib} \PY{k}{import} \PY{n}{pyplot} \PY{k}{as} \PY{n}{plt}
+\PY{k+kn}{import} \PY{n+nn}{pyblp}
+\PY{k+kn}{from} \PY{n+nn}{tqdm}\PY{n+nn}{.}\PY{n+nn}{notebook} \PY{k}{import} \PY{n}{trange}
+\PY{k+kn}{import} \PY{n+nn}{statsmodels}\PY{n+nn}{.}\PY{n+nn}{api} \PY{k}{as} \PY{n+nn}{sm}
+\PY{k+kn}{import} \PY{n+nn}{statsmodels}\PY{n+nn}{.}\PY{n+nn}{formula}\PY{n+nn}{.}\PY{n+nn}{api} \PY{k}{as} \PY{n+nn}{smf}
+\PY{k+kn}{from} \PY{n+nn}{linearmodels}\PY{n+nn}{.}\PY{n+nn}{iv} \PY{k}{import} \PY{n}{IV2SLS}
+\PY{k+kn}{import} \PY{n+nn}{pandas} \PY{k}{as} \PY{n+nn}{pd}
+\end{Verbatim}
+\end{tcolorbox}
+
+    \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\prompt{In}{incolor}{2}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{n}{RNG\PYZus{}SEED} \PY{o}{=} \PY{l+m+mi}{8476263}
+
+\PY{n}{rng} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{random}\PY{o}{.}\PY{n}{default\PYZus{}rng}\PY{p}{(}\PY{n}{RNG\PYZus{}SEED}\PY{p}{)} \PY{c+c1}{\PYZsh{} this random seeding is for reproducibility}
+\end{Verbatim}
+\end{tcolorbox}
+
+    \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\prompt{In}{incolor}{3}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{c+c1}{\PYZsh{} I am horrified that we have to overrun the default collinearity checks}
+\PY{c+c1}{\PYZsh{} however, wired and satellite dummy variables are collinear}
+\PY{c+c1}{\PYZsh{} so to prevent PyBLP from throwing a fit, we must do this.}
+\PY{n}{pyblp}\PY{o}{.}\PY{n}{options}\PY{o}{.}\PY{n}{collinear\PYZus{}rtol} \PY{o}{=} \PY{l+m+mi}{0}
+\PY{n}{pyblp}\PY{o}{.}\PY{n}{options}\PY{o}{.}\PY{n}{collinear\PYZus{}atol} \PY{o}{=} \PY{l+m+mi}{0}
+\end{Verbatim}
+\end{tcolorbox}
+
+    \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\prompt{In}{incolor}{4}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{c+c1}{\PYZsh{} fixed parameter definitions}
+
+\PY{n}{beta1} \PY{o}{=} \PY{l+m+mi}{1}
+\PY{n}{alpha} \PY{o}{=} \PY{o}{\PYZhy{}}\PY{l+m+mi}{2}
+\PY{n}{gamma0} \PY{o}{=} \PY{l+m+mi}{1}\PY{o}{/}\PY{l+m+mi}{2}
+\PY{n}{gamma1} \PY{o}{=} \PY{l+m+mi}{1}\PY{o}{/}\PY{l+m+mi}{4}
+\PY{n}{beta2\PYZus{}bar} \PY{o}{=} \PY{l+m+mi}{4}
+\PY{n}{beta3\PYZus{}bar} \PY{o}{=} \PY{l+m+mi}{4}
+\PY{n}{sigma2} \PY{o}{=} \PY{l+m+mi}{1}
+\PY{n}{sigma3} \PY{o}{=} \PY{l+m+mi}{1}
+
+\PY{c+c1}{\PYZsh{} markets and goods}
+\PY{n}{T} \PY{o}{=} \PY{l+m+mi}{600}
+\PY{n}{J} \PY{o}{=} \PY{l+m+mi}{4}
+\end{Verbatim}
+\end{tcolorbox}
+
+    \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\prompt{In}{incolor}{5}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{c+c1}{\PYZsh{} 3.1}
+
+\PY{c+c1}{\PYZsh{} x\PYZus{}jt, w\PYZus{}jt are absolute value of iid standard normal variables}
+\PY{n}{x} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{absolute}\PY{p}{(}\PY{n}{rng}\PY{o}{.}\PY{n}{standard\PYZus{}normal}\PY{p}{(}\PY{n}{size}\PY{o}{=}\PY{p}{(}\PY{n}{J}\PY{p}{,}\PY{n}{T}\PY{p}{)}\PY{p}{)}\PY{p}{)}
+\PY{n}{w} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{absolute}\PY{p}{(}\PY{n}{rng}\PY{o}{.}\PY{n}{standard\PYZus{}normal}\PY{p}{(}\PY{n}{size}\PY{o}{=}\PY{p}{(}\PY{n}{J}\PY{p}{,}\PY{n}{T}\PY{p}{)}\PY{p}{)}\PY{p}{)}
+
+\PY{n}{unobservable\PYZus{}mean} \PY{o}{=} \PY{p}{[}\PY{l+m+mi}{0}\PY{p}{,}\PY{l+m+mi}{0}\PY{p}{]}
+\PY{n}{unobservable\PYZus{}cov} \PY{o}{=} \PY{p}{[}\PY{p}{[}\PY{l+m+mi}{1}\PY{p}{,}\PY{l+m+mf}{0.25}\PY{p}{]}\PY{p}{,}\PY{p}{[}\PY{l+m+mf}{0.25}\PY{p}{,}\PY{l+m+mi}{1}\PY{p}{]}\PY{p}{]}
+\PY{n}{unobservables} \PY{o}{=} \PY{n}{rng}\PY{o}{.}\PY{n}{multivariate\PYZus{}normal}\PY{p}{(}\PY{n}{unobservable\PYZus{}mean}\PY{p}{,} \PY{n}{unobservable\PYZus{}cov}\PY{p}{,} \PY{n}{size}\PY{o}{=}\PY{p}{(}\PY{n}{J}\PY{p}{,}\PY{n}{T}\PY{p}{)}\PY{p}{)}
+\PY{n}{xi} \PY{o}{=} \PY{n}{unobservables}\PY{p}{[}\PY{p}{:}\PY{p}{,}\PY{p}{:}\PY{p}{,}\PY{l+m+mi}{0}\PY{p}{]}
+\PY{n}{omega} \PY{o}{=} \PY{n}{unobservables}\PY{p}{[}\PY{p}{:}\PY{p}{,}\PY{p}{:}\PY{p}{,}\PY{l+m+mi}{1}\PY{p}{]}
+\end{Verbatim}
+\end{tcolorbox}
+
+    \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\prompt{In}{incolor}{6}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{c+c1}{\PYZsh{} 3.2a}
+\PY{c+c1}{\PYZsh{} defining the market share}
+
+\PY{k}{def} \PY{n+nf}{own\PYZus{}mkt\PYZus{}share\PYZus{}derivative}\PY{p}{(}\PY{n}{t}\PY{p}{,} \PY{n}{p}\PY{p}{,} \PY{n}{beta2}\PY{p}{,} \PY{n}{beta3}\PY{p}{)}\PY{p}{:}
+    \PY{c+c1}{\PYZsh{} p should be a length J vector}
+    \PY{c+c1}{\PYZsh{} betas should be num\PYZus{}sims}
+
+    \PY{n}{u\PYZus{}t} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{tile}\PY{p}{(}\PY{n}{x}\PY{p}{[}\PY{p}{:}\PY{p}{,}\PY{n}{t}\PY{p}{]} \PY{o}{+} \PY{n}{xi}\PY{p}{[}\PY{p}{:}\PY{p}{,}\PY{n}{t}\PY{p}{]} \PY{o}{+} \PY{n}{alpha}\PY{o}{*}\PY{n}{p}\PY{p}{,} \PY{p}{(}\PY{n+nb}{len}\PY{p}{(}\PY{n}{beta2}\PY{p}{)}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)}\PY{p}{)} \PY{c+c1}{\PYZsh{} num\PYZus{}sims x J }
+    \PY{k}{for} \PY{n}{j} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n}{J}\PY{p}{)}\PY{p}{:}
+        \PY{k}{if} \PY{n}{j} \PY{o}{\PYZlt{}} \PY{l+m+mi}{2}\PY{p}{:}
+            \PY{n}{u\PYZus{}t}\PY{p}{[}\PY{p}{:}\PY{p}{,}\PY{n}{j}\PY{p}{]} \PY{o}{=} \PY{n}{u\PYZus{}t}\PY{p}{[}\PY{p}{:}\PY{p}{,}\PY{n}{j}\PY{p}{]} \PY{o}{+} \PY{n}{beta2}
+        \PY{k}{else}\PY{p}{:}
+            \PY{n}{u\PYZus{}t}\PY{p}{[}\PY{p}{:}\PY{p}{,}\PY{n}{j}\PY{p}{]} \PY{o}{=} \PY{n}{u\PYZus{}t}\PY{p}{[}\PY{p}{:}\PY{p}{,}\PY{n}{j}\PY{p}{]} \PY{o}{+} \PY{n}{beta3}
+
+    \PY{n}{Z} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{tile}\PY{p}{(} \PY{l+m+mi}{1} \PY{o}{+} \PY{n}{np}\PY{o}{.}\PY{n}{sum}\PY{p}{(}\PY{n}{np}\PY{o}{.}\PY{n}{exp}\PY{p}{(}\PY{n}{u\PYZus{}t}\PY{p}{)}\PY{p}{,}\PY{n}{axis}\PY{o}{=}\PY{o}{\PYZhy{}}\PY{l+m+mi}{1}\PY{p}{)}\PY{p}{,} \PY{p}{(}\PY{n}{J}\PY{p}{,}\PY{l+m+mi}{1}\PY{p}{)}\PY{p}{)}\PY{o}{.}\PY{n}{T}
+    \PY{n}{numerator} \PY{o}{=} \PY{n}{alpha}\PY{o}{*}\PY{n}{np}\PY{o}{.}\PY{n}{exp}\PY{p}{(}\PY{n}{u\PYZus{}t}\PY{p}{)}\PY{o}{*}\PY{n}{Z} \PY{o}{\PYZhy{}} \PY{n}{alpha}\PY{o}{*}\PY{n}{np}\PY{o}{.}\PY{n}{square}\PY{p}{(}\PY{n}{np}\PY{o}{.}\PY{n}{exp}\PY{p}{(}\PY{n}{u\PYZus{}t}\PY{p}{)}\PY{p}{)} \PY{c+c1}{\PYZsh{} num\PYZus{}sims x J}
+    \PY{n}{denominator} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{square}\PY{p}{(}\PY{n}{Z}\PY{p}{)}
+
+    \PY{k}{return} \PY{n}{np}\PY{o}{.}\PY{n}{mean}\PY{p}{(}\PY{n}{numerator} \PY{o}{/} \PY{n}{denominator}\PY{p}{,} \PY{n}{axis}\PY{o}{=}\PY{l+m+mi}{0}\PY{p}{)}
+
+\PY{k}{def} \PY{n+nf}{outside\PYZus{}mkt\PYZus{}share\PYZus{}derivative}\PY{p}{(}\PY{n}{t}\PY{p}{,} \PY{n}{p}\PY{p}{,} \PY{n}{beta2}\PY{p}{,} \PY{n}{beta3}\PY{p}{)}\PY{p}{:}
+    \PY{c+c1}{\PYZsh{} p should be a length J vector}
+    \PY{c+c1}{\PYZsh{} betas should be num\PYZus{}sims}
+
+    \PY{n}{u\PYZus{}t} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{tile}\PY{p}{(}\PY{n}{x}\PY{p}{[}\PY{p}{:}\PY{p}{,}\PY{n}{t}\PY{p}{]} \PY{o}{+} \PY{n}{xi}\PY{p}{[}\PY{p}{:}\PY{p}{,}\PY{n}{t}\PY{p}{]} \PY{o}{+} \PY{n}{alpha}\PY{o}{*}\PY{n}{p}\PY{p}{,} \PY{p}{(}\PY{n+nb}{len}\PY{p}{(}\PY{n}{beta2}\PY{p}{)}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)}\PY{p}{)} \PY{c+c1}{\PYZsh{} num\PYZus{}sims x J }
+    \PY{k}{for} \PY{n}{j} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n}{J}\PY{p}{)}\PY{p}{:}
+        \PY{k}{if} \PY{n}{j} \PY{o}{\PYZlt{}} \PY{l+m+mi}{2}\PY{p}{:}
+            \PY{n}{u\PYZus{}t}\PY{p}{[}\PY{p}{:}\PY{p}{,}\PY{n}{j}\PY{p}{]} \PY{o}{=} \PY{n}{u\PYZus{}t}\PY{p}{[}\PY{p}{:}\PY{p}{,}\PY{n}{j}\PY{p}{]} \PY{o}{+} \PY{n}{beta2}
+        \PY{k}{else}\PY{p}{:}
+            \PY{n}{u\PYZus{}t}\PY{p}{[}\PY{p}{:}\PY{p}{,}\PY{n}{j}\PY{p}{]} \PY{o}{=} \PY{n}{u\PYZus{}t}\PY{p}{[}\PY{p}{:}\PY{p}{,}\PY{n}{j}\PY{p}{]} \PY{o}{+} \PY{n}{beta3}
+
+    \PY{n}{Z} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{tile}\PY{p}{(} \PY{l+m+mi}{1} \PY{o}{+} \PY{n}{np}\PY{o}{.}\PY{n}{sum}\PY{p}{(}\PY{n}{np}\PY{o}{.}\PY{n}{exp}\PY{p}{(}\PY{n}{u\PYZus{}t}\PY{p}{)}\PY{p}{,}\PY{n}{axis}\PY{o}{=}\PY{o}{\PYZhy{}}\PY{l+m+mi}{1}\PY{p}{)}\PY{p}{,} \PY{p}{(}\PY{n}{J}\PY{p}{,}\PY{l+m+mi}{1}\PY{p}{)}\PY{p}{)}\PY{o}{.}\PY{n}{T}
+    \PY{n}{numerator} \PY{o}{=} \PY{o}{\PYZhy{}}\PY{l+m+mi}{1}\PY{o}{*}\PY{n}{alpha}\PY{o}{*}\PY{n}{np}\PY{o}{.}\PY{n}{exp}\PY{p}{(}\PY{n}{u\PYZus{}t}\PY{p}{)} \PY{c+c1}{\PYZsh{} num\PYZus{}sims x J}
+    \PY{n}{denominator} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{square}\PY{p}{(}\PY{n}{Z}\PY{p}{)}
+
+    \PY{k}{return} \PY{n}{np}\PY{o}{.}\PY{n}{mean}\PY{p}{(}\PY{n}{numerator} \PY{o}{/} \PY{n}{denominator}\PY{p}{,} \PY{n}{axis}\PY{o}{=}\PY{l+m+mi}{0}\PY{p}{)}
+
+\PY{k}{def} \PY{n+nf}{full\PYZus{}mkt\PYZus{}share\PYZus{}derivative}\PY{p}{(}\PY{n}{t}\PY{p}{,} \PY{n}{p}\PY{p}{,} \PY{n}{beta2}\PY{p}{,} \PY{n}{beta3}\PY{p}{)}\PY{p}{:}
+    \PY{c+c1}{\PYZsh{} p should be a length J vector}
+    \PY{c+c1}{\PYZsh{} betas should be num\PYZus{}sims}
+
+    \PY{n}{u\PYZus{}t} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{tile}\PY{p}{(}\PY{n}{x}\PY{p}{[}\PY{p}{:}\PY{p}{,}\PY{n}{t}\PY{p}{]} \PY{o}{+} \PY{n}{xi}\PY{p}{[}\PY{p}{:}\PY{p}{,}\PY{n}{t}\PY{p}{]} \PY{o}{+} \PY{n}{alpha}\PY{o}{*}\PY{n}{p}\PY{p}{,} \PY{p}{(}\PY{n+nb}{len}\PY{p}{(}\PY{n}{beta2}\PY{p}{)}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)}\PY{p}{)} \PY{c+c1}{\PYZsh{} num\PYZus{}sims x J }
+    \PY{k}{for} \PY{n}{j} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n}{J}\PY{p}{)}\PY{p}{:}
+        \PY{k}{if} \PY{n}{j} \PY{o}{\PYZlt{}} \PY{l+m+mi}{2}\PY{p}{:}
+            \PY{n}{u\PYZus{}t}\PY{p}{[}\PY{p}{:}\PY{p}{,}\PY{n}{j}\PY{p}{]} \PY{o}{=} \PY{n}{u\PYZus{}t}\PY{p}{[}\PY{p}{:}\PY{p}{,}\PY{n}{j}\PY{p}{]} \PY{o}{+} \PY{n}{beta2}
+        \PY{k}{else}\PY{p}{:}
+            \PY{n}{u\PYZus{}t}\PY{p}{[}\PY{p}{:}\PY{p}{,}\PY{n}{j}\PY{p}{]} \PY{o}{=} \PY{n}{u\PYZus{}t}\PY{p}{[}\PY{p}{:}\PY{p}{,}\PY{n}{j}\PY{p}{]} \PY{o}{+} \PY{n}{beta3}
+
+    \PY{n}{Z} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{tile}\PY{p}{(} \PY{l+m+mi}{1} \PY{o}{+} \PY{n}{np}\PY{o}{.}\PY{n}{sum}\PY{p}{(}\PY{n}{np}\PY{o}{.}\PY{n}{exp}\PY{p}{(}\PY{n}{u\PYZus{}t}\PY{p}{)}\PY{p}{,}\PY{n}{axis}\PY{o}{=}\PY{o}{\PYZhy{}}\PY{l+m+mi}{1}\PY{p}{)}\PY{p}{,} \PY{p}{(}\PY{n}{J}\PY{p}{,}\PY{l+m+mi}{1}\PY{p}{)}\PY{p}{)}\PY{o}{.}\PY{n}{T} \PY{c+c1}{\PYZsh{} num\PYZus{}sims x J}
+
+    \PY{n}{derivatives} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{zeros}\PY{p}{(}\PY{p}{(}\PY{n}{J}\PY{p}{,}\PY{n}{J}\PY{p}{)}\PY{p}{)}
+
+    \PY{n}{own\PYZus{}numerator} \PY{o}{=} \PY{n}{alpha}\PY{o}{*}\PY{n}{np}\PY{o}{.}\PY{n}{exp}\PY{p}{(}\PY{n}{u\PYZus{}t}\PY{p}{)}\PY{o}{*}\PY{n}{Z} \PY{o}{\PYZhy{}} \PY{n}{alpha}\PY{o}{*}\PY{n}{np}\PY{o}{.}\PY{n}{square}\PY{p}{(}\PY{n}{np}\PY{o}{.}\PY{n}{exp}\PY{p}{(}\PY{n}{u\PYZus{}t}\PY{p}{)}\PY{p}{)} \PY{c+c1}{\PYZsh{} num\PYZus{}sims x J}
+    \PY{n}{denominator} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{square}\PY{p}{(}\PY{n}{Z}\PY{p}{)}
+
+    \PY{k}{for} \PY{n}{j} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n}{J}\PY{p}{)}\PY{p}{:}
+        \PY{n}{derivatives}\PY{p}{[}\PY{n}{j}\PY{p}{,}\PY{n}{j}\PY{p}{]} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{mean}\PY{p}{(}\PY{n}{own\PYZus{}numerator} \PY{o}{/} \PY{n}{denominator}\PY{p}{,} \PY{n}{axis}\PY{o}{=}\PY{l+m+mi}{0}\PY{p}{)}\PY{p}{[}\PY{n}{j}\PY{p}{]}
+
+    \PY{k}{for} \PY{n}{j} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n}{J}\PY{p}{)}\PY{p}{:}
+        \PY{k}{for} \PY{n}{k} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n}{J}\PY{p}{)}\PY{p}{:}
+            \PY{k}{if} \PY{o+ow}{not} \PY{p}{(}\PY{n}{j} \PY{o}{==} \PY{n}{k}\PY{p}{)}\PY{p}{:}
+                \PY{n}{derivatives}\PY{p}{[}\PY{n}{j}\PY{p}{,}\PY{n}{k}\PY{p}{]} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{mean}\PY{p}{(}\PY{o}{\PYZhy{}}\PY{l+m+mi}{1}\PY{o}{*}\PY{n}{alpha}\PY{o}{*}\PY{n}{np}\PY{o}{.}\PY{n}{exp}\PY{p}{(}\PY{n}{u\PYZus{}t}\PY{p}{)}\PY{p}{[}\PY{p}{:}\PY{p}{,}\PY{n}{k}\PY{p}{]}\PY{o}{*}\PY{n}{np}\PY{o}{.}\PY{n}{exp}\PY{p}{(}\PY{n}{u\PYZus{}t}\PY{p}{)}\PY{p}{[}\PY{p}{:}\PY{p}{,}\PY{n}{j}\PY{p}{]} \PY{o}{/} \PY{n}{np}\PY{o}{.}\PY{n}{square}\PY{p}{(}\PY{l+m+mi}{1} \PY{o}{+} \PY{n}{np}\PY{o}{.}\PY{n}{sum}\PY{p}{(}\PY{n}{np}\PY{o}{.}\PY{n}{exp}\PY{p}{(}\PY{n}{u\PYZus{}t}\PY{p}{)}\PY{p}{,}\PY{n}{axis}\PY{o}{=}\PY{o}{\PYZhy{}}\PY{l+m+mi}{1}\PY{p}{)}\PY{p}{)}\PY{p}{)}
+
+    \PY{k}{return} \PY{n}{derivatives}
+\end{Verbatim}
+\end{tcolorbox}
+
+    \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\prompt{In}{incolor}{7}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{c+c1}{\PYZsh{} s\PYZus{}jt(p) }
+\PY{k}{def} \PY{n+nf}{mkt\PYZus{}share}\PY{p}{(}\PY{n}{t}\PY{p}{,} \PY{n}{p}\PY{p}{,} \PY{n}{beta2}\PY{p}{,} \PY{n}{beta3}\PY{p}{)}\PY{p}{:}
+    \PY{c+c1}{\PYZsh{} p should be a length J vector}
+    \PY{c+c1}{\PYZsh{} betas should be num\PYZus{}sims}
+
+    \PY{n}{u\PYZus{}t} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{tile}\PY{p}{(}\PY{n}{x}\PY{p}{[}\PY{p}{:}\PY{p}{,}\PY{n}{t}\PY{p}{]} \PY{o}{+} \PY{n}{xi}\PY{p}{[}\PY{p}{:}\PY{p}{,}\PY{n}{t}\PY{p}{]} \PY{o}{+} \PY{n}{alpha}\PY{o}{*}\PY{n}{p}\PY{p}{,} \PY{p}{(}\PY{n+nb}{len}\PY{p}{(}\PY{n}{beta2}\PY{p}{)}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)}\PY{p}{)} \PY{c+c1}{\PYZsh{} num\PYZus{}sims x J }
+    \PY{k}{for} \PY{n}{j} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n}{J}\PY{p}{)}\PY{p}{:}
+        \PY{k}{if} \PY{n}{j} \PY{o}{\PYZlt{}} \PY{l+m+mi}{2}\PY{p}{:}
+            \PY{n}{u\PYZus{}t}\PY{p}{[}\PY{p}{:}\PY{p}{,}\PY{n}{j}\PY{p}{]} \PY{o}{=} \PY{n}{u\PYZus{}t}\PY{p}{[}\PY{p}{:}\PY{p}{,}\PY{n}{j}\PY{p}{]} \PY{o}{+} \PY{n}{beta2}
+        \PY{k}{else}\PY{p}{:}
+            \PY{n}{u\PYZus{}t}\PY{p}{[}\PY{p}{:}\PY{p}{,}\PY{n}{j}\PY{p}{]} \PY{o}{=} \PY{n}{u\PYZus{}t}\PY{p}{[}\PY{p}{:}\PY{p}{,}\PY{n}{j}\PY{p}{]} \PY{o}{+} \PY{n}{beta3}
+
+    \PY{n}{numerator} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{exp}\PY{p}{(}\PY{n}{u\PYZus{}t}\PY{p}{)}
+    \PY{n}{denominator} \PY{o}{=} \PY{l+m+mi}{1} \PY{o}{+} \PY{n}{np}\PY{o}{.}\PY{n}{sum}\PY{p}{(}\PY{n}{np}\PY{o}{.}\PY{n}{exp}\PY{p}{(}\PY{n}{u\PYZus{}t}\PY{p}{)}\PY{p}{,}\PY{n}{axis}\PY{o}{=}\PY{o}{\PYZhy{}}\PY{l+m+mi}{1}\PY{p}{)} \PY{c+c1}{\PYZsh{} num\PYZus{}sims}
+
+    \PY{k}{return} \PY{n}{np}\PY{o}{.}\PY{n}{mean}\PY{p}{(}\PY{n}{numerator} \PY{o}{/} \PY{p}{(}\PY{n}{np}\PY{o}{.}\PY{n}{tile}\PY{p}{(}\PY{n}{denominator}\PY{p}{,} \PY{p}{(}\PY{n}{J}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)}\PY{p}{)}\PY{o}{.}\PY{n}{T}\PY{p}{)}\PY{p}{,} \PY{n}{axis}\PY{o}{=}\PY{l+m+mi}{0}\PY{p}{)}
+\end{Verbatim}
+\end{tcolorbox}
+
+    \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\prompt{In}{incolor}{8}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{c+c1}{\PYZsh{} 3.2a(iv)}
+\PY{c+c1}{\PYZsh{} draw beta coefficients for N individuals S times, observe variation in market share derivatives}
+
+\PY{n}{S} \PY{o}{=} \PY{l+m+mi}{100}
+
+\PY{n}{all\PYZus{}derivatives} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{zeros}\PY{p}{(}\PY{p}{(}\PY{n}{J}\PY{p}{,}\PY{n}{J}\PY{p}{,}\PY{n}{S}\PY{p}{)}\PY{p}{)}
+\PY{n}{all\PYZus{}shares} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{zeros}\PY{p}{(}\PY{p}{(}\PY{n}{J}\PY{p}{,}\PY{n}{S}\PY{p}{)}\PY{p}{)}
+
+\PY{n}{N} \PY{o}{=} \PY{l+m+mi}{3000}
+
+\PY{n}{price} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{array}\PY{p}{(}\PY{p}{[}\PY{l+m+mi}{1}\PY{p}{,}\PY{l+m+mi}{1}\PY{p}{,}\PY{l+m+mi}{1}\PY{p}{,}\PY{l+m+mi}{1}\PY{p}{]}\PY{p}{)}
+
+\PY{k}{for} \PY{n}{s} \PY{o+ow}{in} \PY{n}{trange}\PY{p}{(}\PY{n}{S}\PY{p}{)}\PY{p}{:}
+    \PY{n}{beta2} \PY{o}{=} \PY{n}{rng}\PY{o}{.}\PY{n}{normal}\PY{p}{(}\PY{n}{beta2\PYZus{}bar}\PY{p}{,} \PY{n}{sigma2}\PY{p}{,} \PY{n}{N}\PY{p}{)}
+    \PY{n}{beta3} \PY{o}{=} \PY{n}{rng}\PY{o}{.}\PY{n}{normal}\PY{p}{(}\PY{n}{beta3\PYZus{}bar}\PY{p}{,} \PY{n}{sigma3}\PY{p}{,} \PY{n}{N}\PY{p}{)}
+    \PY{n}{all\PYZus{}derivatives}\PY{p}{[}\PY{p}{:}\PY{p}{,}\PY{p}{:}\PY{p}{,}\PY{n}{s}\PY{p}{]} \PY{o}{=} \PY{n}{full\PYZus{}mkt\PYZus{}share\PYZus{}derivative}\PY{p}{(}\PY{l+m+mi}{0}\PY{p}{,} \PY{n}{price}\PY{p}{,} \PY{n}{beta2}\PY{p}{,} \PY{n}{beta3}\PY{p}{)}
+    \PY{n}{all\PYZus{}shares}\PY{p}{[}\PY{p}{:}\PY{p}{,}\PY{n}{s}\PY{p}{]} \PY{o}{=} \PY{n}{mkt\PYZus{}share}\PY{p}{(}\PY{l+m+mi}{1}\PY{p}{,} \PY{n}{price}\PY{p}{,} \PY{n}{beta2}\PY{p}{,} \PY{n}{beta3}\PY{p}{)}
+\PY{p}{(}\PY{n}{np}\PY{o}{.}\PY{n}{mean}\PY{p}{(}\PY{n}{all\PYZus{}shares}\PY{p}{,}\PY{n}{axis}\PY{o}{=}\PY{l+m+mi}{1}\PY{p}{)}\PY{p}{,} \PY{n}{np}\PY{o}{.}\PY{n}{std}\PY{p}{(}\PY{n}{all\PYZus{}shares}\PY{p}{,}\PY{n}{axis}\PY{o}{=}\PY{l+m+mi}{1}\PY{p}{)}\PY{p}{,} \PY{n}{np}\PY{o}{.}\PY{n}{mean}\PY{p}{(}\PY{n}{all\PYZus{}derivatives}\PY{p}{,} \PY{n}{axis}\PY{o}{=}\PY{l+m+mi}{2}\PY{p}{)}\PY{p}{,} \PY{n}{np}\PY{o}{.}\PY{n}{std}\PY{p}{(}\PY{n}{all\PYZus{}derivatives}\PY{p}{,} \PY{n}{axis}\PY{o}{=}\PY{l+m+mi}{2}\PY{p}{)}\PY{p}{)}
+\end{Verbatim}
+\end{tcolorbox}
+
+
+    \begin{verbatim}
+HBox(children=(IntProgress(value=0), HTML(value='')))
+    \end{verbatim}
+
+
+    \begin{Verbatim}[commandchars=\\\{\}]
+
+    \end{Verbatim}
+
+            \begin{tcolorbox}[breakable, size=fbox, boxrule=.5pt, pad at break*=1mm, opacityfill=0]
+\prompt{Out}{outcolor}{8}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+(array([0.04784253, 0.15288083, 0.44046486, 0.35277411]),
+ array([0.0008991 , 0.00287306, 0.00211771, 0.0016961 ]),
+ array([[-0.29478105,  0.06650959,  0.2168944 ,  0.00709914],
+        [ 0.06650959, -0.16315672,  0.09183023,  0.00300568],
+        [ 0.2168944 ,  0.09183023, -0.35012373,  0.03100105],
+        [ 0.00709914,  0.00300568,  0.03100105, -0.04144621]]),
+ array([[3.08401066e-03, 1.64034900e-03, 1.89106999e-03, 6.18963701e-05],
+        [1.64034900e-03, 2.14278030e-03, 8.00654110e-04, 2.62061074e-05],
+        [1.89106999e-03, 8.00654110e-04, 2.45783477e-03, 3.51894072e-04],
+        [6.18963701e-05, 2.62061074e-05, 3.51894072e-04, 2.89493485e-04]]))
+\end{Verbatim}
+\end{tcolorbox}
+
+    \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\prompt{In}{incolor}{9}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{n}{mc} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{exp}\PY{p}{(} \PY{n}{gamma0} \PY{o}{+} \PY{n}{gamma1}\PY{o}{*}\PY{n}{w} \PY{o}{+} \PY{n}{omega}\PY{o}{/}\PY{l+m+mi}{8}\PY{p}{)}
+\end{Verbatim}
+\end{tcolorbox}
+
+    \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\prompt{In}{incolor}{10}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{c+c1}{\PYZsh{} define function to solve}
+
+\PY{k}{def} \PY{n+nf}{get\PYZus{}function\PYZus{}to\PYZus{}solve}\PY{p}{(}\PY{n}{t}\PY{p}{,} \PY{n}{beta2}\PY{p}{,} \PY{n}{beta3}\PY{p}{)}\PY{p}{:}
+    \PY{k}{def} \PY{n+nf}{F}\PY{p}{(}\PY{n}{p}\PY{p}{)}\PY{p}{:}
+        \PY{c+c1}{\PYZsh{} p is a }
+        \PY{n}{ds\PYZus{}dp} \PY{o}{=} \PY{n}{own\PYZus{}mkt\PYZus{}share\PYZus{}derivative}\PY{p}{(}\PY{n}{t}\PY{p}{,} \PY{n}{p}\PY{p}{,} \PY{n}{beta2}\PY{p}{,} \PY{n}{beta3}\PY{p}{)}
+        \PY{n}{shares} \PY{o}{=} \PY{n}{mkt\PYZus{}share}\PY{p}{(}\PY{n}{t}\PY{p}{,} \PY{n}{p}\PY{p}{,} \PY{n}{beta2}\PY{p}{,} \PY{n}{beta3}\PY{p}{)}
+        \PY{k}{return} \PY{n}{p} \PY{o}{\PYZhy{}} \PY{n}{mc}\PY{p}{[}\PY{p}{:}\PY{p}{,}\PY{n}{t}\PY{p}{]} \PY{o}{+} \PY{n}{np}\PY{o}{.}\PY{n}{reciprocal}\PY{p}{(}\PY{n}{ds\PYZus{}dp}\PY{p}{)}\PY{o}{*}\PY{n}{shares}
+
+    \PY{k}{return} \PY{n}{F}
+\end{Verbatim}
+\end{tcolorbox}
+
+    \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\prompt{In}{incolor}{11}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{c+c1}{\PYZsh{} draw betas, now compute equilibrium prices and shares}
+
+\PY{n}{beta2} \PY{o}{=} \PY{n}{rng}\PY{o}{.}\PY{n}{normal}\PY{p}{(}\PY{n}{beta2\PYZus{}bar}\PY{p}{,} \PY{n}{sigma2}\PY{p}{,} \PY{p}{(}\PY{n}{N}\PY{p}{,}\PY{n}{T}\PY{p}{)}\PY{p}{)}
+\PY{n}{beta3} \PY{o}{=} \PY{n}{rng}\PY{o}{.}\PY{n}{normal}\PY{p}{(}\PY{n}{beta3\PYZus{}bar}\PY{p}{,} \PY{n}{sigma3}\PY{p}{,} \PY{p}{(}\PY{n}{N}\PY{p}{,}\PY{n}{T}\PY{p}{)}\PY{p}{)}
+\end{Verbatim}
+\end{tcolorbox}
+
+    \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\prompt{In}{incolor}{12}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{c+c1}{\PYZsh{} 3.2 and 3.3: compute equilibrium shares, prices}
+
+\PY{c+c1}{\PYZsh{} these two variables are the prices and shares}
+\PY{n}{eq\PYZus{}prices} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{zeros}\PY{p}{(}\PY{p}{(}\PY{n}{J}\PY{p}{,} \PY{n}{T}\PY{p}{)}\PY{p}{)}
+\PY{n}{eq\PYZus{}shares} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{zeros}\PY{p}{(}\PY{p}{(}\PY{n}{J}\PY{p}{,} \PY{n}{T}\PY{p}{)}\PY{p}{)}
+
+\PY{n}{flag\PYZus{}total} \PY{o}{=} \PY{l+m+mi}{0}
+
+\PY{k}{for} \PY{n}{t} \PY{o+ow}{in} \PY{n}{trange}\PY{p}{(}\PY{n}{T}\PY{p}{)}\PY{p}{:}
+    \PY{n}{fn} \PY{o}{=} \PY{n}{get\PYZus{}function\PYZus{}to\PYZus{}solve}\PY{p}{(}\PY{n}{t}\PY{p}{,} \PY{n}{beta2}\PY{p}{[}\PY{p}{:}\PY{p}{,}\PY{n}{t}\PY{p}{]}\PY{p}{,} \PY{n}{beta3}\PY{p}{[}\PY{p}{:}\PY{p}{,}\PY{n}{t}\PY{p}{]}\PY{p}{)}
+    \PY{n}{mkt\PYZus{}eq\PYZus{}prices}\PY{p}{,} \PY{n}{\PYZus{}} \PY{p}{,} \PY{n}{flag}\PY{p}{,} \PY{n}{\PYZus{}} \PY{o}{=} \PY{n}{fsolve}\PY{p}{(}\PY{n}{fn}\PY{p}{,} \PY{n}{np}\PY{o}{.}\PY{n}{array}\PY{p}{(}\PY{p}{[}\PY{l+m+mi}{1}\PY{p}{,}\PY{l+m+mi}{1}\PY{p}{,}\PY{l+m+mi}{1}\PY{p}{,}\PY{l+m+mi}{1}\PY{p}{]}\PY{p}{)}\PY{p}{,} \PY{n}{full\PYZus{}output}\PY{o}{=}\PY{k+kc}{True}\PY{p}{)}
+    \PY{n}{flag\PYZus{}total} \PY{o}{+}\PY{o}{=} \PY{n}{flag}
+    \PY{n}{eq\PYZus{}prices}\PY{p}{[}\PY{p}{:}\PY{p}{,}\PY{n}{t}\PY{p}{]} \PY{o}{=} \PY{n}{mkt\PYZus{}eq\PYZus{}prices}
+    \PY{n}{eq\PYZus{}shares}\PY{p}{[}\PY{p}{:}\PY{p}{,} \PY{n}{t}\PY{p}{]} \PY{o}{=} \PY{n}{mkt\PYZus{}share}\PY{p}{(}\PY{n}{t}\PY{p}{,} \PY{n}{mkt\PYZus{}eq\PYZus{}prices}\PY{p}{,} \PY{n}{beta2}\PY{p}{[}\PY{p}{:}\PY{p}{,}\PY{n}{t}\PY{p}{]}\PY{p}{,} \PY{n}{beta3}\PY{p}{[}\PY{p}{:}\PY{p}{,}\PY{n}{t}\PY{p}{]}\PY{p}{)}
+
+\PY{c+c1}{\PYZsh{} this should be True iff all of the fsolves converge}
+\PY{n}{flag\PYZus{}total} \PY{o}{==} \PY{n}{T}
+\end{Verbatim}
+\end{tcolorbox}
+
+
+    \begin{verbatim}
+HBox(children=(IntProgress(value=0, max=600), HTML(value='')))
+    \end{verbatim}
+
+
+    \begin{Verbatim}[commandchars=\\\{\}]
+
+    \end{Verbatim}
+
+            \begin{tcolorbox}[breakable, size=fbox, boxrule=.5pt, pad at break*=1mm, opacityfill=0]
+\prompt{Out}{outcolor}{12}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+True
+\end{Verbatim}
+\end{tcolorbox}
+
+    \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\prompt{In}{incolor}{13}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{c+c1}{\PYZsh{} check that at the equilibrium prices, the estimates for market shares and market share derivatives are precise}
+\PY{c+c1}{\PYZsh{} repeating the exercise of simulation with equilibrium prices, trying to get equilibrium shares}
+
+\PY{n}{S} \PY{o}{=} \PY{l+m+mi}{100}
+
+\PY{n}{all\PYZus{}derivatives} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{zeros}\PY{p}{(}\PY{p}{(}\PY{n}{J}\PY{p}{,}\PY{n}{J}\PY{p}{,}\PY{n}{S}\PY{p}{)}\PY{p}{)}
+\PY{n}{all\PYZus{}shares} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{zeros}\PY{p}{(}\PY{p}{(}\PY{n}{J}\PY{p}{,}\PY{n}{S}\PY{p}{)}\PY{p}{)}
+
+\PY{n}{N} \PY{o}{=} \PY{l+m+mi}{100}
+
+\PY{k}{for} \PY{n}{t} \PY{o+ow}{in} \PY{n}{trange}\PY{p}{(}\PY{n}{T}\PY{p}{)}\PY{p}{:}
+    \PY{n}{price} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{array}\PY{p}{(}\PY{n}{eq\PYZus{}prices}\PY{p}{[}\PY{p}{:}\PY{p}{,}\PY{n}{t}\PY{p}{]}\PY{p}{)}
+    \PY{k}{for} \PY{n}{s} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n}{S}\PY{p}{)}\PY{p}{:}
+        \PY{n}{beta2\PYZus{}s} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{random}\PY{o}{.}\PY{n}{normal}\PY{p}{(}\PY{n}{beta2\PYZus{}bar}\PY{p}{,} \PY{n}{sigma2}\PY{p}{,} \PY{n}{N}\PY{p}{)}
+        \PY{n}{beta3\PYZus{}s} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{random}\PY{o}{.}\PY{n}{normal}\PY{p}{(}\PY{n}{beta3\PYZus{}bar}\PY{p}{,} \PY{n}{sigma3}\PY{p}{,} \PY{n}{N}\PY{p}{)}
+        \PY{n}{all\PYZus{}derivatives}\PY{p}{[}\PY{p}{:}\PY{p}{,}\PY{p}{:}\PY{p}{,}\PY{n}{s}\PY{p}{]} \PY{o}{=} \PY{n}{full\PYZus{}mkt\PYZus{}share\PYZus{}derivative}\PY{p}{(}\PY{l+m+mi}{0}\PY{p}{,} \PY{n}{price}\PY{p}{,} \PY{n}{beta2\PYZus{}s}\PY{p}{,} \PY{n}{beta3\PYZus{}s}\PY{p}{)}
+        \PY{n}{all\PYZus{}shares}\PY{p}{[}\PY{p}{:}\PY{p}{,}\PY{n}{s}\PY{p}{]} \PY{o}{=} \PY{n}{mkt\PYZus{}share}\PY{p}{(}\PY{n}{t}\PY{p}{,} \PY{n}{price}\PY{p}{,} \PY{n}{beta2\PYZus{}s}\PY{p}{,} \PY{n}{beta3\PYZus{}s}\PY{p}{)}
+
+\PY{p}{(}\PY{n}{np}\PY{o}{.}\PY{n}{mean}\PY{p}{(}\PY{n}{all\PYZus{}shares}\PY{p}{,}\PY{n}{axis}\PY{o}{=}\PY{l+m+mi}{1}\PY{p}{)}\PY{p}{,} \PY{n}{np}\PY{o}{.}\PY{n}{std}\PY{p}{(}\PY{n}{all\PYZus{}shares}\PY{p}{,}\PY{n}{axis}\PY{o}{=}\PY{l+m+mi}{1}\PY{p}{)}\PY{p}{,} \PY{n}{np}\PY{o}{.}\PY{n}{mean}\PY{p}{(}\PY{n}{all\PYZus{}derivatives}\PY{p}{,} \PY{n}{axis}\PY{o}{=}\PY{l+m+mi}{2}\PY{p}{)}\PY{p}{,} \PY{n}{np}\PY{o}{.}\PY{n}{std}\PY{p}{(}\PY{n}{all\PYZus{}derivatives}\PY{p}{,} \PY{n}{axis}\PY{o}{=}\PY{l+m+mi}{2}\PY{p}{)}\PY{p}{)}
+\end{Verbatim}
+\end{tcolorbox}
+
+
+    \begin{verbatim}
+HBox(children=(IntProgress(value=0, max=600), HTML(value='')))
+    \end{verbatim}
+
+
+    \begin{Verbatim}[commandchars=\\\{\}]
+
+    \end{Verbatim}
+
+            \begin{tcolorbox}[breakable, size=fbox, boxrule=.5pt, pad at break*=1mm, opacityfill=0]
+\prompt{Out}{outcolor}{13}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+(array([0.25476331, 0.11264542, 0.40238602, 0.08461194]),
+ array([0.0155214 , 0.0068629 , 0.01925936, 0.00404977]),
+ array([[-0.32821669,  0.04728547,  0.19173592,  0.0080692 ],
+        [ 0.04728547, -0.11247089,  0.04448913,  0.00187232],
+        [ 0.19173592,  0.04448913, -0.39899463,  0.02498351],
+        [ 0.0080692 ,  0.00187232,  0.02498351, -0.04072375]]),
+ array([[1.43367505e-02, 5.23103623e-03, 7.55852805e-03, 3.18100298e-04],
+        [5.23103623e-03, 6.90124310e-03, 1.75383072e-03, 7.38098833e-05],
+        [7.55852805e-03, 1.75383072e-03, 9.21634213e-03, 1.88713073e-03],
+        [3.18100298e-04, 7.38098833e-05, 1.88713073e-03, 1.77312278e-03]]))
+\end{Verbatim}
+\end{tcolorbox}
+
+    \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\prompt{In}{incolor}{14}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{c+c1}{\PYZsh{} Morrow and Skerlos (2011) Method: (see equation 27 in Conlon + Gortmaker)}
+
+\PY{k}{def} \PY{n+nf}{get\PYZus{}matrices}\PY{p}{(}\PY{n}{t}\PY{p}{,} \PY{n}{p}\PY{p}{,} \PY{n}{beta2}\PY{p}{,} \PY{n}{beta3}\PY{p}{)}\PY{p}{:}
+    \PY{c+c1}{\PYZsh{} p should be a length J vector}
+    \PY{c+c1}{\PYZsh{} betas should be num\PYZus{}sims}
+
+    \PY{n}{u\PYZus{}t} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{tile}\PY{p}{(}\PY{n}{x}\PY{p}{[}\PY{p}{:}\PY{p}{,}\PY{n}{t}\PY{p}{]} \PY{o}{+} \PY{n}{xi}\PY{p}{[}\PY{p}{:}\PY{p}{,}\PY{n}{t}\PY{p}{]} \PY{o}{+} \PY{n}{alpha}\PY{o}{*}\PY{n}{p}\PY{p}{,} \PY{p}{(}\PY{n+nb}{len}\PY{p}{(}\PY{n}{beta2}\PY{p}{)}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)}\PY{p}{)} \PY{c+c1}{\PYZsh{} num\PYZus{}sims x J }
+    \PY{k}{for} \PY{n}{j} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n}{J}\PY{p}{)}\PY{p}{:}
+        \PY{k}{if} \PY{n}{j} \PY{o}{\PYZlt{}} \PY{l+m+mi}{2}\PY{p}{:}
+            \PY{n}{u\PYZus{}t}\PY{p}{[}\PY{p}{:}\PY{p}{,}\PY{n}{j}\PY{p}{]} \PY{o}{=} \PY{n}{u\PYZus{}t}\PY{p}{[}\PY{p}{:}\PY{p}{,}\PY{n}{j}\PY{p}{]} \PY{o}{+} \PY{n}{beta2}
+        \PY{k}{else}\PY{p}{:}
+            \PY{n}{u\PYZus{}t}\PY{p}{[}\PY{p}{:}\PY{p}{,}\PY{n}{j}\PY{p}{]} \PY{o}{=} \PY{n}{u\PYZus{}t}\PY{p}{[}\PY{p}{:}\PY{p}{,}\PY{n}{j}\PY{p}{]} \PY{o}{+} \PY{n}{beta3}
+
+    \PY{n}{Z} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{tile}\PY{p}{(} \PY{l+m+mi}{1} \PY{o}{+} \PY{n}{np}\PY{o}{.}\PY{n}{sum}\PY{p}{(}\PY{n}{np}\PY{o}{.}\PY{n}{exp}\PY{p}{(}\PY{n}{u\PYZus{}t}\PY{p}{)}\PY{p}{,}\PY{n}{axis}\PY{o}{=}\PY{o}{\PYZhy{}}\PY{l+m+mi}{1}\PY{p}{)}\PY{p}{,} \PY{p}{(}\PY{n}{J}\PY{p}{,}\PY{l+m+mi}{1}\PY{p}{)}\PY{p}{)}\PY{o}{.}\PY{n}{T} \PY{c+c1}{\PYZsh{} num\PYZus{}sims x J}
+
+    \PY{n}{Lambda\PYZus{}inv} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{zeros}\PY{p}{(}\PY{p}{(}\PY{n}{J}\PY{p}{,}\PY{n}{J}\PY{p}{)}\PY{p}{)}
+    \PY{n}{Gamma} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{zeros}\PY{p}{(}\PY{p}{(}\PY{n}{J}\PY{p}{,}\PY{n}{J}\PY{p}{)}\PY{p}{)}
+
+    \PY{n}{own\PYZus{}numerator} \PY{o}{=} \PY{n}{alpha}\PY{o}{*}\PY{n}{np}\PY{o}{.}\PY{n}{exp}\PY{p}{(}\PY{n}{u\PYZus{}t}\PY{p}{)}  \PY{c+c1}{\PYZsh{} num\PYZus{}sims x J}
+    \PY{n}{denominator} \PY{o}{=} \PY{n}{Z}
+
+    \PY{k}{for} \PY{n}{j} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n}{J}\PY{p}{)}\PY{p}{:}
+        \PY{n}{Lambda\PYZus{}inv}\PY{p}{[}\PY{n}{j}\PY{p}{,}\PY{n}{j}\PY{p}{]} \PY{o}{=} \PY{l+m+mi}{1} \PY{o}{/} \PY{p}{(}\PY{n}{np}\PY{o}{.}\PY{n}{mean}\PY{p}{(}\PY{n}{own\PYZus{}numerator} \PY{o}{/} \PY{n}{denominator}\PY{p}{,} \PY{n}{axis}\PY{o}{=}\PY{l+m+mi}{0}\PY{p}{)}\PY{p}{[}\PY{n}{j}\PY{p}{]}\PY{p}{)}
+
+    \PY{k}{for} \PY{n}{j} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n}{J}\PY{p}{)}\PY{p}{:}
+        \PY{k}{for} \PY{n}{k} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n}{J}\PY{p}{)}\PY{p}{:}
+            \PY{n}{Gamma}\PY{p}{[}\PY{n}{j}\PY{p}{,}\PY{n}{k}\PY{p}{]} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{mean}\PY{p}{(}\PY{n}{alpha}\PY{o}{*}\PY{n}{np}\PY{o}{.}\PY{n}{exp}\PY{p}{(}\PY{n}{u\PYZus{}t}\PY{p}{)}\PY{p}{[}\PY{p}{:}\PY{p}{,}\PY{n}{k}\PY{p}{]}\PY{o}{*}\PY{n}{np}\PY{o}{.}\PY{n}{exp}\PY{p}{(}\PY{n}{u\PYZus{}t}\PY{p}{)}\PY{p}{[}\PY{p}{:}\PY{p}{,}\PY{n}{j}\PY{p}{]} \PY{o}{/} \PY{n}{np}\PY{o}{.}\PY{n}{square}\PY{p}{(}\PY{l+m+mi}{1} \PY{o}{+} \PY{n}{np}\PY{o}{.}\PY{n}{sum}\PY{p}{(}\PY{n}{np}\PY{o}{.}\PY{n}{exp}\PY{p}{(}\PY{n}{u\PYZus{}t}\PY{p}{)}\PY{p}{,}\PY{n}{axis}\PY{o}{=}\PY{o}{\PYZhy{}}\PY{l+m+mi}{1}\PY{p}{)}\PY{p}{)}\PY{p}{)}
+
+    \PY{k}{return} \PY{n}{Lambda\PYZus{}inv}\PY{p}{,} \PY{n}{Gamma}
+
+\PY{k}{def} \PY{n+nf}{get\PYZus{}fixed\PYZus{}point\PYZus{}function}\PY{p}{(}\PY{n}{t}\PY{p}{,} \PY{n}{beta2}\PY{p}{,} \PY{n}{beta3}\PY{p}{)}\PY{p}{:}
+    \PY{n}{ownership\PYZus{}matrix} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{identity}\PY{p}{(}\PY{n}{J}\PY{p}{)}
+    \PY{k}{def} \PY{n+nf}{F}\PY{p}{(}\PY{n}{p}\PY{p}{)}\PY{p}{:}
+        \PY{n}{Lambda\PYZus{}inv}\PY{p}{,} \PY{n}{Gamma} \PY{o}{=} \PY{n}{get\PYZus{}matrices}\PY{p}{(}\PY{n}{t}\PY{p}{,} \PY{n}{p}\PY{p}{,} \PY{n}{beta2}\PY{p}{,} \PY{n}{beta3}\PY{p}{)}
+        \PY{n}{shares} \PY{o}{=} \PY{n}{mkt\PYZus{}share}\PY{p}{(}\PY{n}{t}\PY{p}{,} \PY{n}{p}\PY{p}{,} \PY{n}{beta2}\PY{p}{,} \PY{n}{beta3}\PY{p}{)}
+        \PY{n}{zeta} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{matmul}\PY{p}{(}\PY{n}{np}\PY{o}{.}\PY{n}{matmul}\PY{p}{(}\PY{n}{Lambda\PYZus{}inv}\PY{p}{,} \PY{n}{ownership\PYZus{}matrix}\PY{o}{*}\PY{n}{Gamma}\PY{p}{)}\PY{p}{,} \PY{p}{(}\PY{n}{p} \PY{o}{\PYZhy{}} \PY{n}{mc}\PY{p}{[}\PY{p}{:}\PY{p}{,}\PY{n}{t}\PY{p}{]}\PY{p}{)}\PY{p}{)} \PY{o}{\PYZhy{}} \PY{n}{np}\PY{o}{.}\PY{n}{matmul}\PY{p}{(}\PY{n}{Lambda\PYZus{}inv}\PY{p}{,} \PY{n}{shares}\PY{p}{)}
+        \PY{k}{return} \PY{n}{mc}\PY{p}{[}\PY{p}{:}\PY{p}{,}\PY{n}{t}\PY{p}{]} \PY{o}{+} \PY{n}{zeta}
+
+    \PY{k}{return} \PY{n}{F}
+\end{Verbatim}
+\end{tcolorbox}
+
+    \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\prompt{In}{incolor}{15}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{c+c1}{\PYZsh{} Simulate equilibrium using the Morrow and Skerlos (2011) method}
+\PY{n}{eq\PYZus{}prices\PYZus{}2} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{zeros}\PY{p}{(}\PY{p}{(}\PY{n}{J}\PY{p}{,} \PY{n}{T}\PY{p}{)}\PY{p}{)}
+\PY{n}{eq\PYZus{}shares\PYZus{}2} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{zeros}\PY{p}{(}\PY{p}{(}\PY{n}{J}\PY{p}{,} \PY{n}{T}\PY{p}{)}\PY{p}{)}
+
+\PY{k}{for} \PY{n}{t} \PY{o+ow}{in} \PY{n}{trange}\PY{p}{(}\PY{n}{T}\PY{p}{)}\PY{p}{:}
+    \PY{n}{fn} \PY{o}{=} \PY{n}{get\PYZus{}fixed\PYZus{}point\PYZus{}function}\PY{p}{(}\PY{n}{t}\PY{p}{,} \PY{n}{beta2}\PY{p}{[}\PY{p}{:}\PY{p}{,}\PY{n}{t}\PY{p}{]}\PY{p}{,} \PY{n}{beta3}\PY{p}{[}\PY{p}{:}\PY{p}{,}\PY{n}{t}\PY{p}{]}\PY{p}{)}
+    \PY{n}{mkt\PYZus{}eq\PYZus{}prices} \PY{o}{=} \PY{n}{fixed\PYZus{}point}\PY{p}{(}\PY{n}{fn}\PY{p}{,} \PY{n}{np}\PY{o}{.}\PY{n}{array}\PY{p}{(}\PY{p}{[}\PY{l+m+mi}{1}\PY{p}{,}\PY{l+m+mi}{1}\PY{p}{,}\PY{l+m+mi}{1}\PY{p}{,}\PY{l+m+mi}{1}\PY{p}{]}\PY{p}{)}\PY{p}{,} \PY{n}{method}\PY{o}{=}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{iteration}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
+    \PY{n}{eq\PYZus{}prices\PYZus{}2}\PY{p}{[}\PY{p}{:}\PY{p}{,}\PY{n}{t}\PY{p}{]} \PY{o}{=} \PY{n}{mkt\PYZus{}eq\PYZus{}prices}
+    \PY{n}{eq\PYZus{}shares\PYZus{}2}\PY{p}{[}\PY{p}{:}\PY{p}{,} \PY{n}{t}\PY{p}{]} \PY{o}{=} \PY{n}{mkt\PYZus{}share}\PY{p}{(}\PY{n}{t}\PY{p}{,} \PY{n}{mkt\PYZus{}eq\PYZus{}prices}\PY{p}{,} \PY{n}{beta2}\PY{p}{[}\PY{p}{:}\PY{p}{,}\PY{n}{t}\PY{p}{]}\PY{p}{,} \PY{n}{beta3}\PY{p}{[}\PY{p}{:}\PY{p}{,}\PY{n}{t}\PY{p}{]}\PY{p}{)}
+
+\PY{c+c1}{\PYZsh{} the difference between the two methods, check that this is small}
+\PY{n}{np}\PY{o}{.}\PY{n}{max}\PY{p}{(}\PY{n}{eq\PYZus{}prices\PYZus{}2} \PY{o}{\PYZhy{}} \PY{n}{eq\PYZus{}prices}\PY{p}{)}\PY{p}{,} \PY{n}{np}\PY{o}{.}\PY{n}{max}\PY{p}{(}\PY{n}{eq\PYZus{}shares\PYZus{}2} \PY{o}{\PYZhy{}} \PY{n}{eq\PYZus{}shares}\PY{p}{)}
+\end{Verbatim}
+\end{tcolorbox}
+
+
+    \begin{verbatim}
+HBox(children=(IntProgress(value=0, max=600), HTML(value='')))
+    \end{verbatim}
+
+
+    \begin{Verbatim}[commandchars=\\\{\}]
+
+    \end{Verbatim}
+
+            \begin{tcolorbox}[breakable, size=fbox, boxrule=.5pt, pad at break*=1mm, opacityfill=0]
+\prompt{Out}{outcolor}{15}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+(1.373072322508051e-09, 4.207107107134789e-09)
+\end{Verbatim}
+\end{tcolorbox}
+
+    \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\prompt{In}{incolor}{16}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{c+c1}{\PYZsh{} Precompute the price elasticities and diversion }
+\PY{c+c1}{\PYZsh{} What PyBLP does, and what we will do, is replace the diagonal of the diversion ratio matrix with the outside option diversion ratio (instead of \PYZhy{}1)}
+\PY{n}{true\PYZus{}price\PYZus{}elasticities} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{zeros}\PY{p}{(}\PY{p}{(}\PY{n}{J}\PY{p}{,}\PY{n}{J}\PY{p}{,}\PY{n}{T}\PY{p}{)}\PY{p}{)}
+\PY{n}{true\PYZus{}diversion\PYZus{}ratios} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{zeros}\PY{p}{(}\PY{p}{(}\PY{n}{J}\PY{p}{,}\PY{n}{J}\PY{p}{,}\PY{n}{T}\PY{p}{)}\PY{p}{)}
+
+\PY{n}{N} \PY{o}{=} \PY{l+m+mi}{100}
+
+\PY{k}{for} \PY{n}{t} \PY{o+ow}{in} \PY{n}{trange}\PY{p}{(}\PY{n}{T}\PY{p}{)}\PY{p}{:}
+    \PY{n}{own\PYZus{}price\PYZus{}derivative} \PY{o}{=} \PY{n}{own\PYZus{}mkt\PYZus{}share\PYZus{}derivative}\PY{p}{(}\PY{n}{t}\PY{p}{,} \PY{n}{eq\PYZus{}prices}\PY{p}{[}\PY{p}{:}\PY{p}{,}\PY{n}{t}\PY{p}{]}\PY{p}{,} \PY{n}{beta2}\PY{p}{[}\PY{p}{:}\PY{p}{,}\PY{n}{t}\PY{p}{]}\PY{p}{,} \PY{n}{beta3}\PY{p}{[}\PY{p}{:}\PY{p}{,}\PY{n}{t}\PY{p}{]}\PY{p}{)}
+    \PY{n}{derivative\PYZus{}matrix} \PY{o}{=} \PY{n}{full\PYZus{}mkt\PYZus{}share\PYZus{}derivative}\PY{p}{(}\PY{n}{t}\PY{p}{,} \PY{n}{eq\PYZus{}prices}\PY{p}{[}\PY{p}{:}\PY{p}{,}\PY{n}{t}\PY{p}{]}\PY{p}{,} \PY{n}{beta2}\PY{p}{[}\PY{p}{:}\PY{p}{,}\PY{n}{t}\PY{p}{]}\PY{p}{,} \PY{n}{beta3}\PY{p}{[}\PY{p}{:}\PY{p}{,}\PY{n}{t}\PY{p}{]}\PY{p}{)}
+    \PY{n}{true\PYZus{}price\PYZus{}elasticities}\PY{p}{[}\PY{p}{:}\PY{p}{,}\PY{p}{:}\PY{p}{,}\PY{n}{t}\PY{p}{]} \PY{o}{=} \PY{n}{eq\PYZus{}prices}\PY{p}{[}\PY{p}{:}\PY{p}{,}\PY{n}{t}\PY{p}{]}\PY{o}{*}\PY{n}{derivative\PYZus{}matrix} \PY{o}{/} \PY{n}{eq\PYZus{}shares}\PY{p}{[}\PY{p}{:}\PY{p}{,}\PY{n}{t}\PY{p}{]}\PY{o}{.}\PY{n}{T}
+    \PY{n}{derivative\PYZus{}matrix} \PY{o}{=} \PY{n}{full\PYZus{}mkt\PYZus{}share\PYZus{}derivative}\PY{p}{(}\PY{n}{t}\PY{p}{,} \PY{n}{eq\PYZus{}prices}\PY{p}{[}\PY{p}{:}\PY{p}{,}\PY{n}{t}\PY{p}{]}\PY{p}{,} \PY{n}{beta2}\PY{p}{[}\PY{p}{:}\PY{p}{,}\PY{n}{t}\PY{p}{]}\PY{p}{,} \PY{n}{beta3}\PY{p}{[}\PY{p}{:}\PY{p}{,}\PY{n}{t}\PY{p}{]}\PY{p}{)}
+    \PY{n}{outside\PYZus{}derivatives} \PY{o}{=} \PY{n}{outside\PYZus{}mkt\PYZus{}share\PYZus{}derivative}\PY{p}{(}\PY{n}{t}\PY{p}{,} \PY{n}{eq\PYZus{}prices}\PY{p}{[}\PY{p}{:}\PY{p}{,}\PY{n}{t}\PY{p}{]}\PY{p}{,} \PY{n}{beta2}\PY{p}{[}\PY{p}{:}\PY{p}{,}\PY{n}{t}\PY{p}{]}\PY{p}{,} \PY{n}{beta3}\PY{p}{[}\PY{p}{:}\PY{p}{,}\PY{n}{t}\PY{p}{]}\PY{p}{)}
+    \PY{k}{for} \PY{n}{j} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n}{J}\PY{p}{)}\PY{p}{:}
+        \PY{k}{for} \PY{n}{k} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n}{J}\PY{p}{)}\PY{p}{:}
+            \PY{n}{true\PYZus{}diversion\PYZus{}ratios}\PY{p}{[}\PY{n}{j}\PY{p}{,}\PY{n}{k}\PY{p}{,}\PY{n}{t}\PY{p}{]} \PY{o}{=} \PY{o}{\PYZhy{}}\PY{l+m+mi}{1}\PY{o}{*}\PY{n}{derivative\PYZus{}matrix}\PY{p}{[}\PY{n}{k}\PY{p}{,}\PY{n}{j}\PY{p}{]}\PY{o}{/}\PY{n}{derivative\PYZus{}matrix}\PY{p}{[}\PY{n}{j}\PY{p}{,}\PY{n}{j}\PY{p}{]}
+    \PY{k}{for} \PY{n}{j} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n}{J}\PY{p}{)}\PY{p}{:}
+        \PY{n}{true\PYZus{}diversion\PYZus{}ratios}\PY{p}{[}\PY{n}{j}\PY{p}{,}\PY{n}{j}\PY{p}{,}\PY{n}{t}\PY{p}{]} \PY{o}{=} \PY{o}{\PYZhy{}}\PY{l+m+mi}{1}\PY{o}{*}\PY{n}{outside\PYZus{}derivatives}\PY{p}{[}\PY{n}{j}\PY{p}{]}\PY{o}{/}\PY{n}{derivative\PYZus{}matrix}\PY{p}{[}\PY{n}{j}\PY{p}{,}\PY{n}{j}\PY{p}{]}
+\end{Verbatim}
+\end{tcolorbox}
+
+
+    \begin{verbatim}
+HBox(children=(IntProgress(value=0, max=600), HTML(value='')))
+    \end{verbatim}
+
+
+    \begin{Verbatim}[commandchars=\\\{\}]
+
+    \end{Verbatim}
+
+    \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\prompt{In}{incolor}{17}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{n}{market\PYZus{}ids} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{tile}\PY{p}{(}\PY{n}{np}\PY{o}{.}\PY{n}{arange}\PY{p}{(}\PY{n}{T}\PY{p}{)} \PY{o}{+} \PY{l+m+mi}{1}\PY{p}{,}\PY{p}{(}\PY{n}{J}\PY{p}{,}\PY{l+m+mi}{1}\PY{p}{)}\PY{p}{)}\PY{o}{.}\PY{n}{T}\PY{o}{.}\PY{n}{flatten}\PY{p}{(}\PY{p}{)}
+\PY{n}{firm\PYZus{}ids} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{tile}\PY{p}{(}\PY{n}{np}\PY{o}{.}\PY{n}{arange}\PY{p}{(}\PY{n}{J}\PY{p}{)} \PY{o}{+} \PY{l+m+mi}{1}\PY{p}{,}\PY{p}{(}\PY{n}{T}\PY{p}{,}\PY{l+m+mi}{1}\PY{p}{)}\PY{p}{)}\PY{o}{.}\PY{n}{flatten}\PY{p}{(}\PY{p}{)}
+\PY{n}{satellite} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{concatenate}\PY{p}{(}\PY{p}{(}\PY{n}{np}\PY{o}{.}\PY{n}{ones}\PY{p}{(}\PY{p}{(}\PY{l+m+mi}{2}\PY{p}{,}\PY{n}{T}\PY{p}{)}\PY{p}{)}\PY{p}{,} \PY{n}{np}\PY{o}{.}\PY{n}{zeros}\PY{p}{(}\PY{p}{(}\PY{l+m+mi}{2}\PY{p}{,}\PY{n}{T}\PY{p}{)}\PY{p}{)}\PY{p}{)}\PY{p}{)}\PY{o}{.}\PY{n}{T}\PY{o}{.}\PY{n}{flatten}\PY{p}{(}\PY{p}{)}
+\PY{n}{wired} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{concatenate}\PY{p}{(}\PY{p}{(}\PY{n}{np}\PY{o}{.}\PY{n}{zeros}\PY{p}{(}\PY{p}{(}\PY{l+m+mi}{2}\PY{p}{,}\PY{n}{T}\PY{p}{)}\PY{p}{)}\PY{p}{,} \PY{n}{np}\PY{o}{.}\PY{n}{ones}\PY{p}{(}\PY{p}{(}\PY{l+m+mi}{2}\PY{p}{,}\PY{n}{T}\PY{p}{)}\PY{p}{)}\PY{p}{)}\PY{p}{)}\PY{o}{.}\PY{n}{T}\PY{o}{.}\PY{n}{flatten}\PY{p}{(}\PY{p}{)}
+\PY{n}{observed\PYZus{}data} \PY{o}{=} \PY{n}{pd}\PY{o}{.}\PY{n}{DataFrame}\PY{p}{(}\PY{n}{data}\PY{o}{=}\PY{p}{\PYZob{}}
+    \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{market\PYZus{}ids}\PY{l+s+s2}{\PYZdq{}}\PY{p}{:} \PY{n}{market\PYZus{}ids}\PY{p}{,}
+    \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{firm\PYZus{}ids}\PY{l+s+s2}{\PYZdq{}}\PY{p}{:} \PY{n}{firm\PYZus{}ids}\PY{p}{,}
+    \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{shares}\PY{l+s+s2}{\PYZdq{}}\PY{p}{:} \PY{n}{eq\PYZus{}shares}\PY{o}{.}\PY{n}{T}\PY{o}{.}\PY{n}{flatten}\PY{p}{(}\PY{p}{)}\PY{p}{,}
+    \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{prices}\PY{l+s+s2}{\PYZdq{}}\PY{p}{:} \PY{n}{eq\PYZus{}prices}\PY{o}{.}\PY{n}{T}\PY{o}{.}\PY{n}{flatten}\PY{p}{(}\PY{p}{)}\PY{p}{,}
+    \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{x}\PY{l+s+s2}{\PYZdq{}}\PY{p}{:} \PY{n}{x}\PY{o}{.}\PY{n}{T}\PY{o}{.}\PY{n}{flatten}\PY{p}{(}\PY{p}{)}\PY{p}{,}
+    \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{satellite}\PY{l+s+s2}{\PYZdq{}}\PY{p}{:} \PY{n}{satellite}\PY{p}{,}
+    \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{wired}\PY{l+s+s2}{\PYZdq{}}\PY{p}{:} \PY{n}{wired}\PY{p}{,}
+    \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{w}\PY{l+s+s2}{\PYZdq{}}\PY{p}{:} \PY{n}{w}\PY{o}{.}\PY{n}{T}\PY{o}{.}\PY{n}{flatten}\PY{p}{(}\PY{p}{)}
+\PY{p}{\PYZcb{}}\PY{p}{)}
+\PY{n}{unobserved\PYZus{}data} \PY{o}{=} \PY{n}{pd}\PY{o}{.}\PY{n}{DataFrame}\PY{p}{(}\PY{n}{data}\PY{o}{=}\PY{p}{\PYZob{}}
+    \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{market\PYZus{}ids}\PY{l+s+s2}{\PYZdq{}}\PY{p}{:} \PY{n}{market\PYZus{}ids}\PY{p}{,}
+    \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{firm\PYZus{}ids}\PY{l+s+s2}{\PYZdq{}}\PY{p}{:} \PY{n}{firm\PYZus{}ids}\PY{p}{,}
+    \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{xi}\PY{l+s+s2}{\PYZdq{}}\PY{p}{:} \PY{n}{xi}\PY{o}{.}\PY{n}{T}\PY{o}{.}\PY{n}{flatten}\PY{p}{(}\PY{p}{)}\PY{p}{,}
+    \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{omega}\PY{l+s+s2}{\PYZdq{}}\PY{p}{:} \PY{n}{omega}\PY{o}{.}\PY{n}{T}\PY{o}{.}\PY{n}{flatten}\PY{p}{(}\PY{p}{)}
+\PY{p}{\PYZcb{}}\PY{p}{)}
+\end{Verbatim}
+\end{tcolorbox}
+
+    \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\prompt{In}{incolor}{18}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{c+c1}{\PYZsh{} Instrument Analysis}
+
+\PY{n}{df1} \PY{o}{=} \PY{n}{pd}\PY{o}{.}\PY{n}{DataFrame}\PY{p}{(}\PY{p}{\PYZob{}}
+    \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{p1}\PY{l+s+s1}{\PYZsq{}}\PY{p}{:}\PY{n}{eq\PYZus{}prices}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{,}\PY{p}{:}\PY{p}{]}\PY{p}{,}
+    \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{s1}\PY{l+s+s2}{\PYZdq{}}\PY{p}{:}\PY{n}{eq\PYZus{}shares}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{,}\PY{p}{:}\PY{p}{]}\PY{p}{,}
+    \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{p2}\PY{l+s+s1}{\PYZsq{}}\PY{p}{:}\PY{n}{eq\PYZus{}prices}\PY{p}{[}\PY{l+m+mi}{1}\PY{p}{,}\PY{p}{:}\PY{p}{]}\PY{p}{,}
+    \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{s2}\PY{l+s+s2}{\PYZdq{}}\PY{p}{:}\PY{n}{eq\PYZus{}shares}\PY{p}{[}\PY{l+m+mi}{1}\PY{p}{,}\PY{p}{:}\PY{p}{]}\PY{p}{,}
+    \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{p3}\PY{l+s+s1}{\PYZsq{}}\PY{p}{:}\PY{n}{eq\PYZus{}prices}\PY{p}{[}\PY{l+m+mi}{2}\PY{p}{,}\PY{p}{:}\PY{p}{]}\PY{p}{,}
+    \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{s3}\PY{l+s+s2}{\PYZdq{}}\PY{p}{:}\PY{n}{eq\PYZus{}shares}\PY{p}{[}\PY{l+m+mi}{2}\PY{p}{,}\PY{p}{:}\PY{p}{]}\PY{p}{,}
+    \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{p4}\PY{l+s+s1}{\PYZsq{}}\PY{p}{:}\PY{n}{eq\PYZus{}prices}\PY{p}{[}\PY{l+m+mi}{3}\PY{p}{,}\PY{p}{:}\PY{p}{]}\PY{p}{,}
+    \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{s4}\PY{l+s+s2}{\PYZdq{}}\PY{p}{:}\PY{n}{eq\PYZus{}shares}\PY{p}{[}\PY{l+m+mi}{3}\PY{p}{,}\PY{p}{:}\PY{p}{]}\PY{p}{,}
+    \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{x1}\PY{l+s+s1}{\PYZsq{}}\PY{p}{:}\PY{n}{pd}\PY{o}{.}\PY{n}{Series}\PY{p}{(}\PY{n}{x}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{,}\PY{p}{:}\PY{p}{]}\PY{p}{)}\PY{p}{,}
+    \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{w1}\PY{l+s+s1}{\PYZsq{}}\PY{p}{:}\PY{n}{pd}\PY{o}{.}\PY{n}{Series}\PY{p}{(}\PY{n}{w}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{,}\PY{p}{:}\PY{p}{]}\PY{p}{)}\PY{p}{,}
+    \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{x2}\PY{l+s+s1}{\PYZsq{}}\PY{p}{:}\PY{n}{pd}\PY{o}{.}\PY{n}{Series}\PY{p}{(}\PY{n}{x}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{,}\PY{p}{:}\PY{p}{]}\PY{p}{)}\PY{p}{,}
+    \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{w2}\PY{l+s+s1}{\PYZsq{}}\PY{p}{:}\PY{n}{pd}\PY{o}{.}\PY{n}{Series}\PY{p}{(}\PY{n}{w}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{,}\PY{p}{:}\PY{p}{]}\PY{p}{)}\PY{p}{,}
+    \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{x3}\PY{l+s+s1}{\PYZsq{}}\PY{p}{:}\PY{n}{pd}\PY{o}{.}\PY{n}{Series}\PY{p}{(}\PY{n}{x}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{,}\PY{p}{:}\PY{p}{]}\PY{p}{)}\PY{p}{,}
+    \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{w3}\PY{l+s+s1}{\PYZsq{}}\PY{p}{:}\PY{n}{pd}\PY{o}{.}\PY{n}{Series}\PY{p}{(}\PY{n}{w}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{,}\PY{p}{:}\PY{p}{]}\PY{p}{)}\PY{p}{,}
+    \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{x4}\PY{l+s+s1}{\PYZsq{}}\PY{p}{:}\PY{n}{pd}\PY{o}{.}\PY{n}{Series}\PY{p}{(}\PY{n}{x}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{,}\PY{p}{:}\PY{p}{]}\PY{p}{)}\PY{p}{,}
+    \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{w4}\PY{l+s+s1}{\PYZsq{}}\PY{p}{:}\PY{n}{pd}\PY{o}{.}\PY{n}{Series}\PY{p}{(}\PY{n}{w}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{,}\PY{p}{:}\PY{p}{]}\PY{p}{)}\PY{p}{,}
+
+\PY{p}{\PYZcb{}}\PY{p}{)}
+
+\PY{n}{X} \PY{o}{=} \PY{n}{df1}\PY{p}{[}\PY{p}{[}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{x1}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{x2}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{x3}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{x4}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{w1}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{w2}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{w3}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{w4}\PY{l+s+s2}{\PYZdq{}}\PY{p}{]}\PY{p}{]}
+\PY{c+c1}{\PYZsh{} regress prices on observables }
+
+\PY{n}{modelp1} \PY{o}{=} \PY{n}{sm}\PY{o}{.}\PY{n}{OLS}\PY{p}{(}\PY{n}{df1}\PY{p}{[}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{p1}\PY{l+s+s2}{\PYZdq{}}\PY{p}{]}\PY{p}{,}\PY{n}{X}\PY{p}{)}\PY{o}{.}\PY{n}{fit}\PY{p}{(}\PY{p}{)}
+\PY{n}{modelp2} \PY{o}{=} \PY{n}{sm}\PY{o}{.}\PY{n}{OLS}\PY{p}{(}\PY{n}{df1}\PY{p}{[}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{p2}\PY{l+s+s2}{\PYZdq{}}\PY{p}{]}\PY{p}{,}\PY{n}{X}\PY{p}{)}\PY{o}{.}\PY{n}{fit}\PY{p}{(}\PY{p}{)}
+\PY{n}{modelp3} \PY{o}{=} \PY{n}{sm}\PY{o}{.}\PY{n}{OLS}\PY{p}{(}\PY{n}{df1}\PY{p}{[}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{p3}\PY{l+s+s2}{\PYZdq{}}\PY{p}{]}\PY{p}{,}\PY{n}{X}\PY{p}{)}\PY{o}{.}\PY{n}{fit}\PY{p}{(}\PY{p}{)}
+\PY{n}{modelp4} \PY{o}{=} \PY{n}{sm}\PY{o}{.}\PY{n}{OLS}\PY{p}{(}\PY{n}{df1}\PY{p}{[}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{p4}\PY{l+s+s2}{\PYZdq{}}\PY{p}{]}\PY{p}{,}\PY{n}{X}\PY{p}{)}\PY{o}{.}\PY{n}{fit}\PY{p}{(}\PY{p}{)}
+\PY{n}{models1} \PY{o}{=} \PY{n}{sm}\PY{o}{.}\PY{n}{OLS}\PY{p}{(}\PY{n}{df1}\PY{p}{[}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{s1}\PY{l+s+s2}{\PYZdq{}}\PY{p}{]}\PY{p}{,}\PY{n}{X}\PY{p}{)}\PY{o}{.}\PY{n}{fit}\PY{p}{(}\PY{p}{)}
+\PY{n}{models2} \PY{o}{=} \PY{n}{sm}\PY{o}{.}\PY{n}{OLS}\PY{p}{(}\PY{n}{df1}\PY{p}{[}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{s2}\PY{l+s+s2}{\PYZdq{}}\PY{p}{]}\PY{p}{,}\PY{n}{X}\PY{p}{)}\PY{o}{.}\PY{n}{fit}\PY{p}{(}\PY{p}{)}
+\PY{n}{models3} \PY{o}{=} \PY{n}{sm}\PY{o}{.}\PY{n}{OLS}\PY{p}{(}\PY{n}{df1}\PY{p}{[}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{s3}\PY{l+s+s2}{\PYZdq{}}\PY{p}{]}\PY{p}{,}\PY{n}{X}\PY{p}{)}\PY{o}{.}\PY{n}{fit}\PY{p}{(}\PY{p}{)}
+\PY{n}{models4} \PY{o}{=} \PY{n}{sm}\PY{o}{.}\PY{n}{OLS}\PY{p}{(}\PY{n}{df1}\PY{p}{[}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{s4}\PY{l+s+s2}{\PYZdq{}}\PY{p}{]}\PY{p}{,}\PY{n}{X}\PY{p}{)}\PY{o}{.}\PY{n}{fit}\PY{p}{(}\PY{p}{)}
+\end{Verbatim}
+\end{tcolorbox}
+
+    \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\prompt{In}{incolor}{19}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{n}{modelp1}\PY{o}{.}\PY{n}{rsquared\PYZus{}adj}\PY{p}{,} \PY{n}{modelp2}\PY{o}{.}\PY{n}{rsquared\PYZus{}adj}\PY{p}{,} \PY{n}{modelp3}\PY{o}{.}\PY{n}{rsquared\PYZus{}adj}\PY{p}{,} \PY{n}{modelp4}\PY{o}{.}\PY{n}{rsquared\PYZus{}adj}
+\end{Verbatim}
+\end{tcolorbox}
+
+            \begin{tcolorbox}[breakable, size=fbox, boxrule=.5pt, pad at break*=1mm, opacityfill=0]
+\prompt{Out}{outcolor}{19}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+(0.82875469410635, 0.759261040211614, 0.7466930801949136, 0.7559006839752626)
+\end{Verbatim}
+\end{tcolorbox}
+
+    \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\prompt{In}{incolor}{20}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{n}{models1}\PY{o}{.}\PY{n}{rsquared\PYZus{}adj}\PY{p}{,} \PY{n}{models2}\PY{o}{.}\PY{n}{rsquared\PYZus{}adj}\PY{p}{,} \PY{n}{models3}\PY{o}{.}\PY{n}{rsquared\PYZus{}adj}\PY{p}{,} \PY{n}{models4}\PY{o}{.}\PY{n}{rsquared\PYZus{}adj}
+\end{Verbatim}
+\end{tcolorbox}
+
+            \begin{tcolorbox}[breakable, size=fbox, boxrule=.5pt, pad at break*=1mm, opacityfill=0]
+\prompt{Out}{outcolor}{20}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+(0.6438126366055691,
+ 0.5907181908148607,
+ 0.4754674713240524,
+ 0.5330545414402899)
+\end{Verbatim}
+\end{tcolorbox}
+
+    \hypertarget{part-4}{%
+\subsection{Part 4}\label{part-4}}
+
+    \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\prompt{In}{incolor}{21}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{n}{model\PYZus{}data} \PY{o}{=} \PY{n}{observed\PYZus{}data}\PY{o}{.}\PY{n}{copy}\PY{p}{(}\PY{p}{)}
+\PY{n}{model\PYZus{}data}\PY{p}{[}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{x\PYZus{}other}\PY{l+s+s2}{\PYZdq{}}\PY{p}{]} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{stack}\PY{p}{(}\PY{p}{[}
+    \PY{n}{x}\PY{p}{[}\PY{l+m+mi}{1}\PY{p}{,}\PY{p}{:}\PY{p}{]}\PY{o}{+}\PY{n}{x}\PY{p}{[}\PY{l+m+mi}{2}\PY{p}{,}\PY{p}{:}\PY{p}{]}\PY{o}{+}\PY{n}{x}\PY{p}{[}\PY{l+m+mi}{3}\PY{p}{,}\PY{p}{:}\PY{p}{]}\PY{p}{,}
+    \PY{n}{x}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{,}\PY{p}{:}\PY{p}{]}\PY{o}{+}\PY{n}{x}\PY{p}{[}\PY{l+m+mi}{2}\PY{p}{,}\PY{p}{:}\PY{p}{]}\PY{o}{+}\PY{n}{x}\PY{p}{[}\PY{l+m+mi}{3}\PY{p}{,}\PY{p}{:}\PY{p}{]}\PY{p}{,}
+    \PY{n}{x}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{,}\PY{p}{:}\PY{p}{]}\PY{o}{+}\PY{n}{x}\PY{p}{[}\PY{l+m+mi}{1}\PY{p}{,}\PY{p}{:}\PY{p}{]}\PY{o}{+}\PY{n}{x}\PY{p}{[}\PY{l+m+mi}{3}\PY{p}{,}\PY{p}{:}\PY{p}{]}\PY{p}{,}
+    \PY{n}{x}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{,}\PY{p}{:}\PY{p}{]}\PY{o}{+}\PY{n}{x}\PY{p}{[}\PY{l+m+mi}{1}\PY{p}{,}\PY{p}{:}\PY{p}{]}\PY{o}{+}\PY{n}{x}\PY{p}{[}\PY{l+m+mi}{2}\PY{p}{,}\PY{p}{:}\PY{p}{]}\PY{p}{]}\PY{p}{)}\PY{o}{.}\PY{n}{T}\PY{o}{.}\PY{n}{flatten}\PY{p}{(}\PY{p}{)}
+\PY{n}{model\PYZus{}data}\PY{p}{[}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{w\PYZus{}other}\PY{l+s+s2}{\PYZdq{}}\PY{p}{]} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{stack}\PY{p}{(}
+    \PY{p}{[}\PY{n}{w}\PY{p}{[}\PY{l+m+mi}{1}\PY{p}{,}\PY{p}{:}\PY{p}{]}\PY{o}{+}\PY{n}{w}\PY{p}{[}\PY{l+m+mi}{2}\PY{p}{,}\PY{p}{:}\PY{p}{]}\PY{o}{+}\PY{n}{w}\PY{p}{[}\PY{l+m+mi}{3}\PY{p}{,}\PY{p}{:}\PY{p}{]}\PY{p}{,}
+     \PY{n}{w}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{,}\PY{p}{:}\PY{p}{]}\PY{o}{+}\PY{n}{w}\PY{p}{[}\PY{l+m+mi}{2}\PY{p}{,}\PY{p}{:}\PY{p}{]}\PY{o}{+}\PY{n}{w}\PY{p}{[}\PY{l+m+mi}{3}\PY{p}{,}\PY{p}{:}\PY{p}{]}\PY{p}{,}
+     \PY{n}{w}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{,}\PY{p}{:}\PY{p}{]}\PY{o}{+}\PY{n}{w}\PY{p}{[}\PY{l+m+mi}{1}\PY{p}{,}\PY{p}{:}\PY{p}{]}\PY{o}{+}\PY{n}{w}\PY{p}{[}\PY{l+m+mi}{3}\PY{p}{,}\PY{p}{:}\PY{p}{]}\PY{p}{,}
+     \PY{n}{w}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{,}\PY{p}{:}\PY{p}{]}\PY{o}{+}\PY{n}{w}\PY{p}{[}\PY{l+m+mi}{1}\PY{p}{,}\PY{p}{:}\PY{p}{]}\PY{o}{+}\PY{n}{w}\PY{p}{[}\PY{l+m+mi}{2}\PY{p}{,}\PY{p}{:}\PY{p}{]}\PY{p}{]}\PY{p}{)}\PY{o}{.}\PY{n}{T}\PY{o}{.}\PY{n}{flatten}\PY{p}{(}\PY{p}{)}
+\end{Verbatim}
+\end{tcolorbox}
+
+    \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\prompt{In}{incolor}{22}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{c+c1}{\PYZsh{} 4A: Logit}
+\PY{n}{outside\PYZus{}shares} \PY{o}{=} \PY{l+m+mi}{1} \PY{o}{\PYZhy{}} \PY{n}{np}\PY{o}{.}\PY{n}{sum}\PY{p}{(}\PY{n}{eq\PYZus{}shares}\PY{p}{,} \PY{n}{axis}\PY{o}{=}\PY{l+m+mi}{0}\PY{p}{,} \PY{n}{keepdims}\PY{o}{=}\PY{k+kc}{True}\PY{p}{)}
+\PY{n}{y} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{log}\PY{p}{(}\PY{n}{eq\PYZus{}shares}\PY{o}{/}\PY{n}{outside\PYZus{}shares}\PY{p}{)}\PY{o}{.}\PY{n}{T}\PY{o}{.}\PY{n}{flatten}\PY{p}{(}\PY{p}{)}
+\PY{n}{X} \PY{o}{=} \PY{n}{model\PYZus{}data}\PY{p}{[}\PY{p}{[}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{x}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{satellite}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{wired}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{prices}\PY{l+s+s2}{\PYZdq{}}\PY{p}{]}\PY{p}{]}
+\PY{n}{results} \PY{o}{=} \PY{n}{sm}\PY{o}{.}\PY{n}{OLS}\PY{p}{(}\PY{n}{y}\PY{p}{,}\PY{n}{X}\PY{p}{)}\PY{o}{.}\PY{n}{fit}\PY{p}{(}\PY{p}{)}
+\PY{n}{results}\PY{o}{.}\PY{n}{summary}\PY{p}{(}\PY{p}{)}
+\end{Verbatim}
+\end{tcolorbox}
+
+            \begin{tcolorbox}[breakable, size=fbox, boxrule=.5pt, pad at break*=1mm, opacityfill=0]
+\prompt{Out}{outcolor}{22}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+<class 'statsmodels.iolib.summary.Summary'>
+"""
+                            OLS Regression Results
+==============================================================================
+Dep. Variable:                      y   R-squared:                       0.314
+Model:                            OLS   Adj. R-squared:                  0.313
+Method:                 Least Squares   F-statistic:                     365.4
+Date:                Wed, 13 Oct 2021   Prob (F-statistic):          2.09e-195
+Time:                        20:01:01   Log-Likelihood:                -3033.1
+No. Observations:                2400   AIC:                             6074.
+Df Residuals:                    2396   BIC:                             6097.
+Df Model:                           3
+Covariance Type:            nonrobust
+==============================================================================
+                 coef    std err          t      P>|t|      [0.025      0.975]
+------------------------------------------------------------------------------
+x              0.8375      0.029     28.572      0.000       0.780       0.895
+satellite      1.3705      0.122     11.239      0.000       1.131       1.610
+wired          1.3589      0.123     11.046      0.000       1.118       1.600
+prices        -0.9518      0.044    -21.393      0.000      -1.039      -0.865
+==============================================================================
+Omnibus:                       41.828   Durbin-Watson:                   2.047
+Prob(Omnibus):                  0.000   Jarque-Bera (JB):               48.815
+Skew:                          -0.263   Prob(JB):                     2.51e-11
+Kurtosis:                       3.460   Cond. No.                         30.0
+==============================================================================
+
+Notes:
+[1] Standard Errors assume that the covariance matrix of the errors is correctly
+specified.
+"""
+\end{Verbatim}
+\end{tcolorbox}
+
+    Note that ignoring the endogeneity of prices results in underestimating
+the magnitudes of all the relevant parameters.
+
+    \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\prompt{In}{incolor}{23}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{c+c1}{\PYZsh{}6: IV\PYZhy{}2SLS}
+\PY{n}{X\PYZus{}exog} \PY{o}{=} \PY{n}{model\PYZus{}data}\PY{p}{[}\PY{p}{[}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{x}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{satellite}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{wired}\PY{l+s+s2}{\PYZdq{}}\PY{p}{]}\PY{p}{]}\PY{o}{.}\PY{n}{astype}\PY{p}{(}\PY{n+nb}{float}\PY{p}{)}
+\PY{n}{X\PYZus{}endog} \PY{o}{=} \PY{n}{model\PYZus{}data}\PY{p}{[}\PY{p}{[}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{prices}\PY{l+s+s2}{\PYZdq{}}\PY{p}{]}\PY{p}{]}\PY{o}{.}\PY{n}{astype}\PY{p}{(}\PY{n+nb}{float}\PY{p}{)}
+\PY{n}{Z} \PY{o}{=} \PY{n}{model\PYZus{}data}\PY{p}{[}\PY{p}{[}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{w}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{x\PYZus{}other}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{w\PYZus{}other}\PY{l+s+s2}{\PYZdq{}}\PY{p}{]}\PY{p}{]}\PY{o}{.}\PY{n}{astype}\PY{p}{(}\PY{n+nb}{float}\PY{p}{)}
+\PY{c+c1}{\PYZsh{} we\PYZsq{}ll just instrument for prices with w and x of the own\PYZhy{}product; it seems good enough here}
+\PY{n}{iv\PYZus{}model} \PY{o}{=} \PY{n}{IV2SLS}\PY{p}{(}\PY{n}{y}\PY{p}{,} \PY{n}{X\PYZus{}exog}\PY{p}{,} \PY{n}{X\PYZus{}endog}\PY{p}{,} \PY{n}{Z}\PY{p}{)}\PY{o}{.}\PY{n}{fit}\PY{p}{(}\PY{p}{)}
+\PY{n}{iv\PYZus{}model}\PY{o}{.}\PY{n}{summary}
+\end{Verbatim}
+\end{tcolorbox}
+
+            \begin{tcolorbox}[breakable, size=fbox, boxrule=.5pt, pad at break*=1mm, opacityfill=0]
+\prompt{Out}{outcolor}{23}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+<class 'linearmodels.compat.statsmodels.Summary'>
+"""
+                          IV-2SLS Estimation Summary
+==============================================================================
+Dep. Variable:              dependent   R-squared:                      0.1841
+Estimator:                    IV-2SLS   Adj. R-squared:                 0.1831
+No. Observations:                2400   F-statistic:                    2007.7
+Date:                Wed, Oct 13 2021   P-value (F-stat)                0.0000
+Time:                        20:01:01   Distribution:                  chi2(4)
+Cov. Estimator:                robust
+
+                             Parameter Estimates
+==============================================================================
+            Parameter  Std. Err.     T-stat    P-value    Lower CI    Upper CI
+------------------------------------------------------------------------------
+x              0.9461     0.0331     28.609     0.0000      0.8813      1.0109
+satellite      3.8635     0.1878     20.575     0.0000      3.4955      4.2315
+wired          3.8774     0.1880     20.628     0.0000      3.5090      4.2458
+prices        -1.8992     0.0700    -27.132     0.0000     -2.0364     -1.7620
+==============================================================================
+
+Endogenous: prices
+Instruments: w, x\_other, w\_other
+Robust Covariance (Heteroskedastic)
+Debiased: False
+"""
+\end{Verbatim}
+\end{tcolorbox}
+
+    \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\prompt{In}{incolor}{24}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{c+c1}{\PYZsh{}4.7 nested logit}
+
+\PY{c+c1}{\PYZsh{} construct log of within group share}
+\PY{n}{satellite\PYZus{}share}\PY{o}{=} \PY{n}{eq\PYZus{}shares}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{,}\PY{p}{:}\PY{p}{]} \PY{o}{+} \PY{n}{eq\PYZus{}shares}\PY{p}{[}\PY{l+m+mi}{1}\PY{p}{,}\PY{p}{:}\PY{p}{]}
+\PY{n}{wired\PYZus{}share}\PY{o}{=} \PY{n}{eq\PYZus{}shares}\PY{p}{[}\PY{l+m+mi}{2}\PY{p}{,}\PY{p}{:}\PY{p}{]} \PY{o}{+} \PY{n}{eq\PYZus{}shares}\PY{p}{[}\PY{l+m+mi}{3}\PY{p}{,}\PY{p}{:}\PY{p}{]}
+\PY{n}{model\PYZus{}data}\PY{p}{[}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{within\PYZus{}satellite\PYZus{}shares}\PY{l+s+s2}{\PYZdq{}}\PY{p}{]} \PY{o}{=} \PY{n}{model\PYZus{}data}\PY{p}{[}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{satellite}\PY{l+s+s2}{\PYZdq{}}\PY{p}{]}\PY{o}{*}\PY{n}{np}\PY{o}{.}\PY{n}{log}\PY{p}{(}\PY{n}{eq\PYZus{}shares} \PY{o}{/} \PY{n}{satellite\PYZus{}share}\PY{p}{)}\PY{o}{.}\PY{n}{T}\PY{o}{.}\PY{n}{flatten}\PY{p}{(}\PY{p}{)}
+\PY{n}{model\PYZus{}data}\PY{p}{[}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{within\PYZus{}wired\PYZus{}shares}\PY{l+s+s2}{\PYZdq{}}\PY{p}{]} \PY{o}{=} \PY{n}{model\PYZus{}data}\PY{p}{[}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{wired}\PY{l+s+s2}{\PYZdq{}}\PY{p}{]}\PY{o}{*}\PY{n}{np}\PY{o}{.}\PY{n}{log}\PY{p}{(}\PY{n}{eq\PYZus{}shares} \PY{o}{/} \PY{n}{wired\PYZus{}share}\PY{p}{)}\PY{o}{.}\PY{n}{T}\PY{o}{.}\PY{n}{flatten}\PY{p}{(}\PY{p}{)}
+\PY{n}{model\PYZus{}data}\PY{p}{[}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{within\PYZus{}group\PYZus{}shares}\PY{l+s+s2}{\PYZdq{}}\PY{p}{]} \PY{o}{=} \PY{n}{model\PYZus{}data}\PY{p}{[}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{within\PYZus{}wired\PYZus{}shares}\PY{l+s+s2}{\PYZdq{}}\PY{p}{]} \PY{o}{+} \PY{n}{model\PYZus{}data}\PY{p}{[}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{within\PYZus{}satellite\PYZus{}shares}\PY{l+s+s2}{\PYZdq{}}\PY{p}{]}
+
+\PY{c+c1}{\PYZsh{} now use the other in\PYZhy{}group firm\PYZsq{}s characteristics as instruments}
+\PY{n}{model\PYZus{}data}\PY{p}{[}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{x\PYZus{}other\PYZus{}satellite}\PY{l+s+s2}{\PYZdq{}}\PY{p}{]} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{stack}\PY{p}{(}\PY{p}{[}\PY{n}{x}\PY{p}{[}\PY{l+m+mi}{1}\PY{p}{,}\PY{p}{:}\PY{p}{]}\PY{p}{,} \PY{n}{x}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{,}\PY{p}{:}\PY{p}{]}\PY{p}{,} \PY{n}{x}\PY{p}{[}\PY{l+m+mi}{3}\PY{p}{,}\PY{p}{:}\PY{p}{]}\PY{p}{,} \PY{n}{x}\PY{p}{[}\PY{l+m+mi}{2}\PY{p}{,}\PY{p}{:}\PY{p}{]}\PY{p}{]}\PY{p}{)}\PY{o}{.}\PY{n}{T}\PY{o}{.}\PY{n}{flatten}\PY{p}{(}\PY{p}{)}\PY{o}{*}\PY{n}{model\PYZus{}data}\PY{p}{[}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{satellite}\PY{l+s+s2}{\PYZdq{}}\PY{p}{]}
+\PY{n}{model\PYZus{}data}\PY{p}{[}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{w\PYZus{}other\PYZus{}satellite}\PY{l+s+s2}{\PYZdq{}}\PY{p}{]} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{stack}\PY{p}{(}\PY{p}{[}\PY{n}{w}\PY{p}{[}\PY{l+m+mi}{1}\PY{p}{,}\PY{p}{:}\PY{p}{]}\PY{p}{,} \PY{n}{w}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{,}\PY{p}{:}\PY{p}{]}\PY{p}{,} \PY{n}{w}\PY{p}{[}\PY{l+m+mi}{3}\PY{p}{,}\PY{p}{:}\PY{p}{]}\PY{p}{,} \PY{n}{w}\PY{p}{[}\PY{l+m+mi}{2}\PY{p}{,}\PY{p}{:}\PY{p}{]}\PY{p}{]}\PY{p}{)}\PY{o}{.}\PY{n}{T}\PY{o}{.}\PY{n}{flatten}\PY{p}{(}\PY{p}{)}\PY{o}{*}\PY{n}{model\PYZus{}data}\PY{p}{[}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{satellite}\PY{l+s+s2}{\PYZdq{}}\PY{p}{]}
+\PY{n}{model\PYZus{}data}\PY{p}{[}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{x\PYZus{}other\PYZus{}wired}\PY{l+s+s2}{\PYZdq{}}\PY{p}{]} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{stack}\PY{p}{(}\PY{p}{[}\PY{n}{x}\PY{p}{[}\PY{l+m+mi}{1}\PY{p}{,}\PY{p}{:}\PY{p}{]}\PY{p}{,} \PY{n}{x}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{,}\PY{p}{:}\PY{p}{]}\PY{p}{,} \PY{n}{x}\PY{p}{[}\PY{l+m+mi}{3}\PY{p}{,}\PY{p}{:}\PY{p}{]}\PY{p}{,} \PY{n}{x}\PY{p}{[}\PY{l+m+mi}{2}\PY{p}{,}\PY{p}{:}\PY{p}{]}\PY{p}{]}\PY{p}{)}\PY{o}{.}\PY{n}{T}\PY{o}{.}\PY{n}{flatten}\PY{p}{(}\PY{p}{)}\PY{o}{*}\PY{n}{model\PYZus{}data}\PY{p}{[}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{wired}\PY{l+s+s2}{\PYZdq{}}\PY{p}{]}
+\PY{n}{model\PYZus{}data}\PY{p}{[}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{w\PYZus{}other\PYZus{}wired}\PY{l+s+s2}{\PYZdq{}}\PY{p}{]} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{stack}\PY{p}{(}\PY{p}{[}\PY{n}{w}\PY{p}{[}\PY{l+m+mi}{1}\PY{p}{,}\PY{p}{:}\PY{p}{]}\PY{p}{,} \PY{n}{w}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{,}\PY{p}{:}\PY{p}{]}\PY{p}{,} \PY{n}{w}\PY{p}{[}\PY{l+m+mi}{3}\PY{p}{,}\PY{p}{:}\PY{p}{]}\PY{p}{,} \PY{n}{w}\PY{p}{[}\PY{l+m+mi}{2}\PY{p}{,}\PY{p}{:}\PY{p}{]}\PY{p}{]}\PY{p}{)}\PY{o}{.}\PY{n}{T}\PY{o}{.}\PY{n}{flatten}\PY{p}{(}\PY{p}{)}\PY{o}{*}\PY{n}{model\PYZus{}data}\PY{p}{[}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{wired}\PY{l+s+s2}{\PYZdq{}}\PY{p}{]}
+
+\PY{n}{X\PYZus{}exog} \PY{o}{=} \PY{n}{model\PYZus{}data}\PY{p}{[}\PY{p}{[}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{x}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{satellite}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{wired}\PY{l+s+s2}{\PYZdq{}}\PY{p}{]}\PY{p}{]}
+\PY{n}{X\PYZus{}endog} \PY{o}{=} \PY{n}{model\PYZus{}data}\PY{p}{[}\PY{p}{[}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{prices}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{within\PYZus{}satellite\PYZus{}shares}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{within\PYZus{}wired\PYZus{}shares}\PY{l+s+s2}{\PYZdq{}} \PY{p}{]}\PY{p}{]}
+\PY{n}{Z} \PY{o}{=} \PY{n}{model\PYZus{}data}\PY{p}{[}\PY{p}{[}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{w}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{x\PYZus{}other}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{w\PYZus{}other}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{x\PYZus{}other\PYZus{}satellite}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{w\PYZus{}other\PYZus{}satellite}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{x\PYZus{}other\PYZus{}wired}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{w\PYZus{}other\PYZus{}wired}\PY{l+s+s2}{\PYZdq{}}\PY{p}{]}\PY{p}{]}
+\PY{n}{iv\PYZus{}model} \PY{o}{=} \PY{n}{IV2SLS}\PY{p}{(}\PY{n}{y}\PY{p}{,} \PY{n}{X\PYZus{}exog}\PY{p}{,} \PY{n}{X\PYZus{}endog}\PY{p}{,} \PY{n}{Z}\PY{p}{)}\PY{o}{.}\PY{n}{fit}\PY{p}{(}\PY{p}{)}
+\PY{n}{iv\PYZus{}model}\PY{o}{.}\PY{n}{summary}
+\end{Verbatim}
+\end{tcolorbox}
+
+            \begin{tcolorbox}[breakable, size=fbox, boxrule=.5pt, pad at break*=1mm, opacityfill=0]
+\prompt{Out}{outcolor}{24}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+<class 'linearmodels.compat.statsmodels.Summary'>
+"""
+                          IV-2SLS Estimation Summary
+==============================================================================
+Dep. Variable:              dependent   R-squared:                      0.3589
+Estimator:                    IV-2SLS   Adj. R-squared:                 0.3576
+No. Observations:                2400   F-statistic:                    2635.4
+Date:                Wed, Oct 13 2021   P-value (F-stat)                0.0000
+Time:                        20:01:01   Distribution:                  chi2(6)
+Cov. Estimator:                robust
+
+                                    Parameter Estimates
+================================================================================
+===========
+                         Parameter  Std. Err.     T-stat    P-value    Lower CI
+Upper CI
+--------------------------------------------------------------------------------
+-----------
+x                           0.8483     0.0377     22.479     0.0000      0.7743
+0.9223
+satellite                   3.4995     0.1923     18.200     0.0000      3.1226
+3.8763
+wired                       3.4881     0.1825     19.111     0.0000      3.1303
+3.8458
+prices                     -1.6649     0.0784    -21.241     0.0000     -1.8185
+-1.5112
+within\_satellite\_shares     0.2173     0.0770     2.8237     0.0047      0.0665
+0.3681
+within\_wired\_shares         0.1944     0.0714     2.7237     0.0065      0.0545
+0.3342
+================================================================================
+===========
+
+Endogenous: prices, within\_satellite\_shares, within\_wired\_shares
+Instruments: w, x\_other, w\_other, x\_other\_satellite, w\_other\_satellite,
+x\_other\_wired, w\_other\_wired
+Robust Covariance (Heteroskedastic)
+Debiased: False
+"""
+\end{Verbatim}
+\end{tcolorbox}
+
+    \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\prompt{In}{incolor}{25}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{c+c1}{\PYZsh{} define functions for derivatives and shares in the nested logit}
+
+\PY{k}{def} \PY{n+nf}{full\PYZus{}mkt\PYZus{}share\PYZus{}derivative\PYZus{}nested}\PY{p}{(}\PY{n}{t}\PY{p}{,} \PY{n}{p}\PY{p}{,} \PY{n}{pars}\PY{p}{)}\PY{p}{:}
+
+    \PY{n}{XX} \PY{o}{=}  \PY{p}{[}\PY{n}{x}\PY{p}{[}\PY{p}{:}\PY{p}{,}\PY{n}{t}\PY{p}{]}\PY{p}{,} \PY{p}{[}\PY{l+m+mi}{1}\PY{p}{,}\PY{l+m+mi}{1}\PY{p}{,}\PY{l+m+mi}{0}\PY{p}{,}\PY{l+m+mi}{0}\PY{p}{]}\PY{p}{,} \PY{p}{[}\PY{l+m+mi}{0}\PY{p}{,}\PY{l+m+mi}{0}\PY{p}{,}\PY{l+m+mi}{1}\PY{p}{,}\PY{l+m+mi}{1}\PY{p}{]}\PY{p}{,} \PY{n}{p}  \PY{p}{]}
+
+    \PY{n}{v\PYZus{}t} \PY{o}{=} \PY{n}{pars}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{:}\PY{l+m+mi}{4}\PY{p}{]}  \PY{o}{@} \PY{n}{XX}
+
+    \PY{n}{sigma\PYZus{}1} \PY{o}{=} \PY{n}{pars}\PY{p}{[}\PY{l+m+mi}{4}\PY{p}{]}
+
+    \PY{n}{sigma\PYZus{}2} \PY{o}{=} \PY{n}{pars}\PY{p}{[}\PY{l+m+mi}{5}\PY{p}{]}
+
+    \PY{n}{theta\PYZus{}2} \PY{o}{=} \PY{n}{pars}\PY{p}{[}\PY{l+m+mi}{3}\PY{p}{]}
+
+
+    \PY{n}{D1} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{exp}\PY{p}{(}\PY{n}{v\PYZus{}t}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{]}\PY{o}{/}\PY{p}{(}\PY{l+m+mi}{1}\PY{o}{\PYZhy{}} \PY{n}{sigma\PYZus{}1}\PY{p}{)}\PY{p}{)} \PY{o}{+} \PY{n}{np}\PY{o}{.}\PY{n}{exp}\PY{p}{(}\PY{n}{v\PYZus{}t}\PY{p}{[}\PY{l+m+mi}{1}\PY{p}{]}\PY{o}{/}\PY{p}{(}\PY{l+m+mi}{1}\PY{o}{\PYZhy{}} \PY{n}{sigma\PYZus{}1}\PY{p}{)}\PY{p}{)}
+
+    \PY{n}{D2} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{exp}\PY{p}{(}\PY{n}{v\PYZus{}t}\PY{p}{[}\PY{l+m+mi}{2}\PY{p}{]}\PY{o}{/}\PY{p}{(}\PY{l+m+mi}{1}\PY{o}{\PYZhy{}} \PY{n}{sigma\PYZus{}2}\PY{p}{)}\PY{p}{)} \PY{o}{+} \PY{n}{np}\PY{o}{.}\PY{n}{exp}\PY{p}{(}\PY{n}{v\PYZus{}t}\PY{p}{[}\PY{l+m+mi}{3}\PY{p}{]}\PY{o}{/}\PY{p}{(}\PY{l+m+mi}{1}\PY{o}{\PYZhy{}} \PY{n}{sigma\PYZus{}2}\PY{p}{)}\PY{p}{)}
+
+    \PY{n}{Z} \PY{o}{=} \PY{l+m+mi}{1} \PY{o}{+} \PY{n}{np}\PY{o}{.}\PY{n}{power}\PY{p}{(}\PY{n}{D1}\PY{p}{,} \PY{p}{(}\PY{l+m+mi}{1}\PY{o}{\PYZhy{}} \PY{n}{sigma\PYZus{}1}\PY{p}{)}\PY{p}{)} \PY{o}{+} \PY{n}{np}\PY{o}{.}\PY{n}{power}\PY{p}{(}\PY{n}{D2}\PY{p}{,} \PY{p}{(}\PY{l+m+mi}{1}\PY{o}{\PYZhy{}} \PY{n}{sigma\PYZus{}2}\PY{p}{)}\PY{p}{)}
+
+
+    \PY{n}{derivatives} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{zeros}\PY{p}{(}\PY{p}{(}\PY{n}{J}\PY{p}{,}\PY{n}{J}\PY{p}{)}\PY{p}{)}
+
+    \PY{k}{for} \PY{n}{j} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n}{J}\PY{p}{)}\PY{p}{:}
+        \PY{k}{if} \PY{n}{j} \PY{o}{\PYZlt{}} \PY{l+m+mi}{2}\PY{p}{:}
+            \PY{n}{derivatives}\PY{p}{[}\PY{n}{j}\PY{p}{,}\PY{n}{j}\PY{p}{]} \PY{o}{=} \PY{p}{(}\PY{n}{theta\PYZus{}2}\PY{o}{/}\PY{p}{(}\PY{l+m+mi}{1} \PY{o}{\PYZhy{}} \PY{n}{sigma\PYZus{}1}\PY{p}{)}\PY{p}{)}\PY{o}{*}\PY{p}{(} \PY{n}{np}\PY{o}{.}\PY{n}{exp}\PY{p}{(}\PY{n}{v\PYZus{}t}\PY{p}{[}\PY{n}{j}\PY{p}{]}\PY{o}{/}\PY{p}{(}\PY{l+m+mi}{1}\PY{o}{\PYZhy{}} \PY{n}{sigma\PYZus{}1}\PY{p}{)}\PY{p}{)}\PY{o}{*}\PY{n}{np}\PY{o}{.}\PY{n}{power}\PY{p}{(}\PY{n}{D1}\PY{p}{,} \PY{n}{sigma\PYZus{}1}\PY{p}{)}\PY{o}{*}\PY{n}{Z} \PY{o}{\PYZhy{}}  \PY{n}{np}\PY{o}{.}\PY{n}{exp}\PY{p}{(}\PY{p}{(}\PY{l+m+mi}{2}\PY{o}{*}\PY{n}{v\PYZus{}t}\PY{p}{[}\PY{n}{j}\PY{p}{]}\PY{p}{)}\PY{o}{/}\PY{p}{(}\PY{l+m+mi}{1}\PY{o}{\PYZhy{}} \PY{n}{sigma\PYZus{}1}\PY{p}{)}\PY{p}{)}\PY{o}{*}\PY{p}{(}   \PY{n}{sigma\PYZus{}1}\PY{o}{*}\PY{n}{np}\PY{o}{.}\PY{n}{power}\PY{p}{(}\PY{n}{D1}\PY{p}{,} \PY{n}{sigma\PYZus{}1} \PY{o}{\PYZhy{}}\PY{l+m+mi}{1}\PY{p}{)}\PY{o}{*}\PY{n}{Z} \PY{o}{+} \PY{p}{(}\PY{l+m+mi}{1}\PY{o}{\PYZhy{}} \PY{n}{sigma\PYZus{}1}\PY{p}{)}\PY{p}{)} \PY{p}{)}  \PY{o}{/} \PY{n}{np}\PY{o}{.}\PY{n}{square}\PY{p}{(}\PY{p}{(}\PY{n}{np}\PY{o}{.}\PY{n}{power}\PY{p}{(}\PY{n}{D1}\PY{p}{,} \PY{n}{sigma\PYZus{}1}\PY{p}{)}\PY{o}{*}\PY{n}{Z}\PY{p}{)}\PY{p}{)}
+        \PY{k}{else}\PY{p}{:}
+            \PY{n}{derivatives}\PY{p}{[}\PY{n}{j}\PY{p}{,}\PY{n}{j}\PY{p}{]} \PY{o}{=} \PY{p}{(}\PY{n}{theta\PYZus{}2}\PY{o}{/}\PY{p}{(}\PY{l+m+mi}{1} \PY{o}{\PYZhy{}} \PY{n}{sigma\PYZus{}2}\PY{p}{)}\PY{p}{)}\PY{o}{*}\PY{p}{(} \PY{n}{np}\PY{o}{.}\PY{n}{exp}\PY{p}{(}\PY{n}{v\PYZus{}t}\PY{p}{[}\PY{n}{j}\PY{p}{]}\PY{o}{/}\PY{p}{(}\PY{l+m+mi}{1}\PY{o}{\PYZhy{}} \PY{n}{sigma\PYZus{}2}\PY{p}{)}\PY{p}{)}\PY{o}{*}\PY{n}{np}\PY{o}{.}\PY{n}{power}\PY{p}{(}\PY{n}{D2}\PY{p}{,} \PY{n}{sigma\PYZus{}2}\PY{p}{)}\PY{o}{*}\PY{n}{Z} \PY{o}{\PYZhy{}}  \PY{n}{np}\PY{o}{.}\PY{n}{exp}\PY{p}{(}\PY{p}{(}\PY{l+m+mi}{2}\PY{o}{*}\PY{n}{v\PYZus{}t}\PY{p}{[}\PY{n}{j}\PY{p}{]}\PY{p}{)}\PY{o}{/}\PY{p}{(}\PY{l+m+mi}{1}\PY{o}{\PYZhy{}} \PY{n}{sigma\PYZus{}2}\PY{p}{)}\PY{p}{)}\PY{o}{*}\PY{p}{(}   \PY{n}{sigma\PYZus{}2}\PY{o}{*}\PY{n}{np}\PY{o}{.}\PY{n}{power}\PY{p}{(}\PY{n}{D2}\PY{p}{,} \PY{n}{sigma\PYZus{}2} \PY{o}{\PYZhy{}}\PY{l+m+mi}{1}\PY{p}{)}\PY{o}{*}\PY{n}{Z} \PY{o}{+} \PY{p}{(}\PY{l+m+mi}{1}\PY{o}{\PYZhy{}} \PY{n}{sigma\PYZus{}2}\PY{p}{)}\PY{p}{)} \PY{p}{)}  \PY{o}{/} \PY{n}{np}\PY{o}{.}\PY{n}{square}\PY{p}{(}\PY{p}{(}\PY{n}{np}\PY{o}{.}\PY{n}{power}\PY{p}{(}\PY{n}{D2}\PY{p}{,} \PY{n}{sigma\PYZus{}2}\PY{p}{)}\PY{o}{*}\PY{n}{Z}\PY{p}{)}\PY{p}{)}
+
+
+    \PY{k}{for} \PY{n}{j} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n}{J}\PY{p}{)}\PY{p}{:}
+        \PY{k}{for} \PY{n}{k} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n}{J}\PY{p}{)}\PY{p}{:}
+            \PY{k}{if} \PY{o+ow}{not} \PY{p}{(}\PY{n}{j} \PY{o}{==} \PY{n}{k}\PY{p}{)}\PY{p}{:}
+                \PY{k}{if} \PY{n}{j} \PY{o}{\PYZlt{}} \PY{l+m+mi}{2} \PY{o+ow}{and} \PY{n}{k} \PY{o}{\PYZlt{}} \PY{l+m+mi}{2}\PY{p}{:}
+                    \PY{n}{derivatives}\PY{p}{[}\PY{n}{j}\PY{p}{,}\PY{n}{k}\PY{p}{]} \PY{o}{=} \PY{p}{(}\PY{o}{\PYZhy{}}\PY{n}{theta\PYZus{}2}\PY{o}{/}\PY{p}{(}\PY{l+m+mi}{1} \PY{o}{\PYZhy{}} \PY{n}{sigma\PYZus{}1}\PY{p}{)}\PY{p}{)}\PY{o}{*}\PY{n}{np}\PY{o}{.}\PY{n}{exp}\PY{p}{(}\PY{n}{v\PYZus{}t}\PY{p}{[}\PY{n}{j}\PY{p}{]}\PY{o}{/}\PY{p}{(}\PY{l+m+mi}{1}\PY{o}{\PYZhy{}} \PY{n}{sigma\PYZus{}1}\PY{p}{)}\PY{p}{)}\PY{o}{*}\PY{n}{np}\PY{o}{.}\PY{n}{exp}\PY{p}{(}\PY{n}{v\PYZus{}t}\PY{p}{[}\PY{n}{k}\PY{p}{]}\PY{o}{/}\PY{p}{(}\PY{l+m+mi}{1}\PY{o}{\PYZhy{}} \PY{n}{sigma\PYZus{}1}\PY{p}{)}\PY{p}{)}\PY{o}{*}\PY{p}{(} \PY{n}{sigma\PYZus{}1}\PY{o}{*}\PY{n}{np}\PY{o}{.}\PY{n}{power}\PY{p}{(}\PY{n}{D1}\PY{p}{,}\PY{n}{sigma\PYZus{}1}\PY{o}{\PYZhy{}}\PY{l+m+mi}{1}\PY{p}{)}\PY{o}{*}\PY{n}{Z} \PY{o}{+} \PY{p}{(}\PY{l+m+mi}{1}\PY{o}{\PYZhy{}} \PY{n}{sigma\PYZus{}1}\PY{p}{)}   \PY{p}{)}  \PY{o}{/} \PY{n}{np}\PY{o}{.}\PY{n}{square}\PY{p}{(}\PY{p}{(}\PY{n}{np}\PY{o}{.}\PY{n}{power}\PY{p}{(}\PY{n}{D1}\PY{p}{,} \PY{n}{sigma\PYZus{}1}\PY{p}{)}\PY{o}{*}\PY{n}{Z}\PY{p}{)}\PY{p}{)}
+                \PY{k}{if} \PY{n}{j} \PY{o}{\PYZgt{}}\PY{o}{=} \PY{l+m+mi}{2} \PY{o+ow}{and} \PY{n}{k} \PY{o}{\PYZgt{}}\PY{o}{=} \PY{l+m+mi}{2}\PY{p}{:}
+                    \PY{n}{derivatives}\PY{p}{[}\PY{n}{j}\PY{p}{,}\PY{n}{k}\PY{p}{]} \PY{o}{=} \PY{p}{(}\PY{o}{\PYZhy{}}\PY{n}{theta\PYZus{}2}\PY{o}{/}\PY{p}{(}\PY{l+m+mi}{1} \PY{o}{\PYZhy{}} \PY{n}{sigma\PYZus{}2}\PY{p}{)}\PY{p}{)}\PY{o}{*}\PY{n}{np}\PY{o}{.}\PY{n}{exp}\PY{p}{(}\PY{n}{v\PYZus{}t}\PY{p}{[}\PY{n}{j}\PY{p}{]}\PY{o}{/}\PY{p}{(}\PY{l+m+mi}{1}\PY{o}{\PYZhy{}} \PY{n}{sigma\PYZus{}2}\PY{p}{)}\PY{p}{)}\PY{o}{*}\PY{n}{np}\PY{o}{.}\PY{n}{exp}\PY{p}{(}\PY{n}{v\PYZus{}t}\PY{p}{[}\PY{n}{k}\PY{p}{]}\PY{o}{/}\PY{p}{(}\PY{l+m+mi}{1}\PY{o}{\PYZhy{}} \PY{n}{sigma\PYZus{}2}\PY{p}{)}\PY{p}{)}\PY{o}{*}\PY{p}{(} \PY{n}{sigma\PYZus{}1}\PY{o}{*}\PY{n}{np}\PY{o}{.}\PY{n}{power}\PY{p}{(}\PY{n}{D2}\PY{p}{,}\PY{n}{sigma\PYZus{}2}\PY{o}{\PYZhy{}}\PY{l+m+mi}{1}\PY{p}{)}\PY{o}{*}\PY{n}{Z} \PY{o}{+} \PY{p}{(}\PY{l+m+mi}{1}\PY{o}{\PYZhy{}} \PY{n}{sigma\PYZus{}2}\PY{p}{)}   \PY{p}{)}  \PY{o}{/} \PY{n}{np}\PY{o}{.}\PY{n}{square}\PY{p}{(}\PY{p}{(}\PY{n}{np}\PY{o}{.}\PY{n}{power}\PY{p}{(}\PY{n}{D2}\PY{p}{,} \PY{n}{sigma\PYZus{}2}\PY{p}{)}\PY{o}{*}\PY{n}{Z}\PY{p}{)}\PY{p}{)}
+                \PY{k}{if} \PY{n}{j} \PY{o}{\PYZlt{}} \PY{l+m+mi}{2} \PY{o+ow}{and} \PY{n}{k} \PY{o}{\PYZgt{}}\PY{o}{=} \PY{l+m+mi}{2}\PY{p}{:}
+                    \PY{n}{derivatives}\PY{p}{[}\PY{n}{j}\PY{p}{,}\PY{n}{k}\PY{p}{]} \PY{o}{=} \PY{p}{(}\PY{o}{\PYZhy{}}\PY{n}{theta\PYZus{}2}\PY{o}{/}\PY{p}{(}\PY{l+m+mi}{1} \PY{o}{\PYZhy{}} \PY{n}{sigma\PYZus{}2}\PY{p}{)}\PY{p}{)}\PY{o}{*}\PY{n}{np}\PY{o}{.}\PY{n}{exp}\PY{p}{(}\PY{n}{v\PYZus{}t}\PY{p}{[}\PY{n}{j}\PY{p}{]}\PY{o}{/}\PY{p}{(}\PY{l+m+mi}{1}\PY{o}{\PYZhy{}} \PY{n}{sigma\PYZus{}1}\PY{p}{)}\PY{p}{)}\PY{o}{*}\PY{n}{np}\PY{o}{.}\PY{n}{exp}\PY{p}{(}\PY{n}{v\PYZus{}t}\PY{p}{[}\PY{n}{k}\PY{p}{]}\PY{o}{/}\PY{p}{(}\PY{l+m+mi}{1}\PY{o}{\PYZhy{}} \PY{n}{sigma\PYZus{}2}\PY{p}{)}\PY{p}{)}\PY{o}{*}\PY{p}{(}\PY{l+m+mi}{1}\PY{o}{\PYZhy{}}\PY{n}{sigma\PYZus{}2}\PY{p}{)}\PY{o}{*}\PY{n}{np}\PY{o}{.}\PY{n}{power}\PY{p}{(}\PY{n}{D2}\PY{p}{,} \PY{o}{\PYZhy{}} \PY{n}{sigma\PYZus{}2}\PY{p}{)}\PY{o}{*}\PY{n}{np}\PY{o}{.}\PY{n}{power}\PY{p}{(}\PY{n}{D1}\PY{p}{,} \PY{n}{sigma\PYZus{}1}\PY{p}{)} \PY{o}{/} \PY{n}{np}\PY{o}{.}\PY{n}{square}\PY{p}{(}\PY{p}{(}\PY{n}{np}\PY{o}{.}\PY{n}{power}\PY{p}{(}\PY{n}{D1}\PY{p}{,} \PY{n}{sigma\PYZus{}1}\PY{p}{)}\PY{o}{*}\PY{n}{Z}\PY{p}{)}\PY{p}{)}
+                \PY{k}{if} \PY{n}{j} \PY{o}{\PYZgt{}}\PY{o}{=} \PY{l+m+mi}{2} \PY{o+ow}{and} \PY{n}{k} \PY{o}{\PYZlt{}} \PY{l+m+mi}{2}\PY{p}{:}
+                    \PY{n}{derivatives}\PY{p}{[}\PY{n}{j}\PY{p}{,}\PY{n}{k}\PY{p}{]} \PY{o}{=} \PY{p}{(}\PY{o}{\PYZhy{}}\PY{n}{theta\PYZus{}2}\PY{o}{/}\PY{p}{(}\PY{l+m+mi}{1} \PY{o}{\PYZhy{}} \PY{n}{sigma\PYZus{}1}\PY{p}{)}\PY{p}{)}\PY{o}{*}\PY{n}{np}\PY{o}{.}\PY{n}{exp}\PY{p}{(}\PY{n}{v\PYZus{}t}\PY{p}{[}\PY{n}{j}\PY{p}{]}\PY{o}{/}\PY{p}{(}\PY{l+m+mi}{1}\PY{o}{\PYZhy{}} \PY{n}{sigma\PYZus{}2}\PY{p}{)}\PY{p}{)}\PY{o}{*}\PY{n}{np}\PY{o}{.}\PY{n}{exp}\PY{p}{(}\PY{n}{v\PYZus{}t}\PY{p}{[}\PY{n}{k}\PY{p}{]}\PY{o}{/}\PY{p}{(}\PY{l+m+mi}{1}\PY{o}{\PYZhy{}} \PY{n}{sigma\PYZus{}1}\PY{p}{)}\PY{p}{)}\PY{o}{*}\PY{p}{(}\PY{l+m+mi}{1}\PY{o}{\PYZhy{}}\PY{n}{sigma\PYZus{}1}\PY{p}{)}\PY{o}{*}\PY{n}{np}\PY{o}{.}\PY{n}{power}\PY{p}{(}\PY{n}{D1}\PY{p}{,} \PY{o}{\PYZhy{}} \PY{n}{sigma\PYZus{}1}\PY{p}{)}\PY{o}{*}\PY{n}{np}\PY{o}{.}\PY{n}{power}\PY{p}{(}\PY{n}{D2}\PY{p}{,} \PY{n}{sigma\PYZus{}2}\PY{p}{)} \PY{o}{/} \PY{n}{np}\PY{o}{.}\PY{n}{square}\PY{p}{(}\PY{p}{(}\PY{n}{np}\PY{o}{.}\PY{n}{power}\PY{p}{(}\PY{n}{D2}\PY{p}{,} \PY{n}{sigma\PYZus{}2}\PY{p}{)}\PY{o}{*}\PY{n}{Z}\PY{p}{)}\PY{p}{)}
+
+
+    \PY{n}{estimated\PYZus{}shares} \PY{o}{=} \PY{n}{mkt\PYZus{}share\PYZus{}nested}\PY{p}{(}\PY{n}{t}\PY{p}{,} \PY{n}{p}\PY{p}{,} \PY{n}{pars}\PY{p}{)}
+    \PY{k}{return} \PY{n}{derivatives}\PY{p}{,} \PY{o}{\PYZhy{}}\PY{l+m+mi}{1}\PY{o}{*}\PY{n}{theta\PYZus{}2}\PY{o}{*}\PY{n}{estimated\PYZus{}shares}\PY{o}{*}\PY{p}{(}\PY{l+m+mi}{1} \PY{o}{\PYZhy{}} \PY{n}{estimated\PYZus{}shares}\PY{o}{.}\PY{n}{sum}\PY{p}{(}\PY{p}{)}\PY{p}{)}
+
+\PY{k}{def} \PY{n+nf}{mkt\PYZus{}share\PYZus{}nested}\PY{p}{(}\PY{n}{t}\PY{p}{,} \PY{n}{p}\PY{p}{,} \PY{n}{pars}\PY{p}{)}\PY{p}{:}
+
+    \PY{n}{XX} \PY{o}{=}  \PY{p}{[}\PY{n}{x}\PY{p}{[}\PY{p}{:}\PY{p}{,}\PY{n}{t}\PY{p}{]}\PY{p}{,} \PY{p}{[}\PY{l+m+mi}{1}\PY{p}{,}\PY{l+m+mi}{1}\PY{p}{,}\PY{l+m+mi}{0}\PY{p}{,}\PY{l+m+mi}{0}\PY{p}{]}\PY{p}{,} \PY{p}{[}\PY{l+m+mi}{0}\PY{p}{,}\PY{l+m+mi}{0}\PY{p}{,}\PY{l+m+mi}{1}\PY{p}{,}\PY{l+m+mi}{1}\PY{p}{]}\PY{p}{,} \PY{n}{p}  \PY{p}{]}
+
+    \PY{n}{v\PYZus{}t} \PY{o}{=} \PY{n}{pars}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{:}\PY{l+m+mi}{4}\PY{p}{]} \PY{n+nd}{@XX}
+
+    \PY{n}{sigma\PYZus{}1} \PY{o}{=} \PY{n}{pars}\PY{p}{[}\PY{l+m+mi}{4}\PY{p}{]}
+
+    \PY{n}{sigma\PYZus{}2} \PY{o}{=} \PY{n}{pars}\PY{p}{[}\PY{l+m+mi}{5}\PY{p}{]}
+
+    \PY{n}{theta\PYZus{}2} \PY{o}{=} \PY{n}{pars}\PY{p}{[}\PY{l+m+mi}{3}\PY{p}{]}
+
+
+    \PY{n}{D1} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{exp}\PY{p}{(}\PY{n}{v\PYZus{}t}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{]}\PY{o}{/}\PY{p}{(}\PY{l+m+mi}{1}\PY{o}{\PYZhy{}} \PY{n}{sigma\PYZus{}1}\PY{p}{)}\PY{p}{)} \PY{o}{+} \PY{n}{np}\PY{o}{.}\PY{n}{exp}\PY{p}{(}\PY{n}{v\PYZus{}t}\PY{p}{[}\PY{l+m+mi}{1}\PY{p}{]}\PY{o}{/}\PY{p}{(}\PY{l+m+mi}{1}\PY{o}{\PYZhy{}} \PY{n}{sigma\PYZus{}1}\PY{p}{)}\PY{p}{)}
+
+    \PY{n}{D2} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{exp}\PY{p}{(}\PY{n}{v\PYZus{}t}\PY{p}{[}\PY{l+m+mi}{2}\PY{p}{]}\PY{o}{/}\PY{p}{(}\PY{l+m+mi}{1}\PY{o}{\PYZhy{}} \PY{n}{sigma\PYZus{}2}\PY{p}{)}\PY{p}{)} \PY{o}{+} \PY{n}{np}\PY{o}{.}\PY{n}{exp}\PY{p}{(}\PY{n}{v\PYZus{}t}\PY{p}{[}\PY{l+m+mi}{3}\PY{p}{]}\PY{o}{/}\PY{p}{(}\PY{l+m+mi}{1}\PY{o}{\PYZhy{}} \PY{n}{sigma\PYZus{}2}\PY{p}{)}\PY{p}{)}
+
+    \PY{n}{Z} \PY{o}{=} \PY{l+m+mi}{1} \PY{o}{+} \PY{n}{np}\PY{o}{.}\PY{n}{power}\PY{p}{(}\PY{n}{D1}\PY{p}{,} \PY{p}{(}\PY{l+m+mi}{1}\PY{o}{\PYZhy{}} \PY{n}{sigma\PYZus{}1}\PY{p}{)}\PY{p}{)} \PY{o}{+} \PY{n}{np}\PY{o}{.}\PY{n}{power}\PY{p}{(}\PY{n}{D2}\PY{p}{,} \PY{p}{(}\PY{l+m+mi}{1}\PY{o}{\PYZhy{}} \PY{n}{sigma\PYZus{}2}\PY{p}{)}\PY{p}{)}
+
+
+    \PY{n}{shares} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{zeros}\PY{p}{(}\PY{p}{(}\PY{n}{J}\PY{p}{,}\PY{l+m+mi}{1}\PY{p}{)}\PY{p}{)}
+
+    \PY{k}{for} \PY{n}{j} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n}{J}\PY{p}{)}\PY{p}{:}
+        \PY{k}{if} \PY{n}{j} \PY{o}{\PYZlt{}} \PY{l+m+mi}{2}\PY{p}{:}
+            \PY{n}{shares}\PY{p}{[}\PY{n}{j}\PY{p}{]} \PY{o}{=} \PY{p}{(}\PY{n}{np}\PY{o}{.}\PY{n}{exp}\PY{p}{(}\PY{n}{v\PYZus{}t}\PY{p}{[}\PY{n}{j}\PY{p}{]}\PY{o}{/}\PY{p}{(}\PY{l+m+mi}{1}\PY{o}{\PYZhy{}}\PY{n}{sigma\PYZus{}1}\PY{p}{)}\PY{p}{)}\PY{p}{)} \PY{o}{/}  \PY{p}{(}\PY{n}{np}\PY{o}{.}\PY{n}{power}\PY{p}{(}\PY{n}{D1}\PY{p}{,} \PY{n}{sigma\PYZus{}1}\PY{p}{)}\PY{o}{*}\PY{n}{Z}\PY{p}{)}
+        \PY{k}{else}\PY{p}{:}
+            \PY{n}{shares}\PY{p}{[}\PY{n}{j}\PY{p}{]} \PY{o}{=} \PY{p}{(}\PY{n}{np}\PY{o}{.}\PY{n}{exp}\PY{p}{(}\PY{n}{v\PYZus{}t}\PY{p}{[}\PY{n}{j}\PY{p}{]}\PY{o}{/}\PY{p}{(}\PY{l+m+mi}{1}\PY{o}{\PYZhy{}}\PY{n}{sigma\PYZus{}2}\PY{p}{)}\PY{p}{)}\PY{p}{)} \PY{o}{/}  \PY{p}{(}\PY{n}{np}\PY{o}{.}\PY{n}{power}\PY{p}{(}\PY{n}{D2}\PY{p}{,} \PY{n}{sigma\PYZus{}2}\PY{p}{)}\PY{o}{*}\PY{n}{Z}\PY{p}{)}
+
+
+    \PY{k}{return} \PY{n}{shares}
+
+\end{Verbatim}
+\end{tcolorbox}
+
+    \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\prompt{In}{incolor}{26}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{c+c1}{\PYZsh{} Precompute the price elasticities and diversion }
+\PY{n}{nested\PYZus{}logit\PYZus{}price\PYZus{}elasticities} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{zeros}\PY{p}{(}\PY{p}{(}\PY{n}{J}\PY{p}{,}\PY{n}{J}\PY{p}{,}\PY{n}{T}\PY{p}{)}\PY{p}{)}
+\PY{n}{nested\PYZus{}logit\PYZus{}diversion\PYZus{}ratios} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{zeros}\PY{p}{(}\PY{p}{(}\PY{n}{J}\PY{p}{,}\PY{n}{J}\PY{p}{,}\PY{n}{T}\PY{p}{)}\PY{p}{)}
+
+\PY{n}{N} \PY{o}{=} \PY{l+m+mi}{100}
+
+\PY{k}{for} \PY{n}{t} \PY{o+ow}{in} \PY{n}{trange}\PY{p}{(}\PY{n}{T}\PY{p}{)}\PY{p}{:}
+    \PY{n}{derivative\PYZus{}matrix}\PY{p}{,} \PY{n}{outside\PYZus{}derivative} \PY{o}{=} \PY{n}{full\PYZus{}mkt\PYZus{}share\PYZus{}derivative\PYZus{}nested}\PY{p}{(}\PY{n}{t}\PY{p}{,} \PY{n}{eq\PYZus{}prices}\PY{p}{[}\PY{p}{:}\PY{p}{,}\PY{n}{t}\PY{p}{]}\PY{p}{,} \PY{n}{iv\PYZus{}model}\PY{o}{.}\PY{n}{params}\PY{p}{)}
+    \PY{n}{nested\PYZus{}logit\PYZus{}price\PYZus{}elasticities}\PY{p}{[}\PY{p}{:}\PY{p}{,}\PY{p}{:}\PY{p}{,}\PY{n}{t}\PY{p}{]} \PY{o}{=} \PY{n}{eq\PYZus{}prices}\PY{p}{[}\PY{p}{:}\PY{p}{,}\PY{n}{t}\PY{p}{]}\PY{o}{*}\PY{n}{derivative\PYZus{}matrix} \PY{o}{/} \PY{n}{eq\PYZus{}shares}\PY{p}{[}\PY{p}{:}\PY{p}{,}\PY{n}{t}\PY{p}{]}\PY{o}{.}\PY{n}{T}
+    \PY{n}{estimated\PYZus{}shares} \PY{o}{=} \PY{n}{mkt\PYZus{}share\PYZus{}nested}\PY{p}{(}\PY{n}{t}\PY{p}{,} \PY{n}{eq\PYZus{}prices}\PY{p}{[}\PY{p}{:}\PY{p}{,}\PY{n}{t}\PY{p}{]}\PY{p}{,} \PY{n}{iv\PYZus{}model}\PY{o}{.}\PY{n}{params}\PY{p}{)}
+    \PY{k}{for} \PY{n}{j} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n}{J}\PY{p}{)}\PY{p}{:}
+        \PY{k}{for} \PY{n}{k} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n}{J}\PY{p}{)}\PY{p}{:}
+            \PY{n}{nested\PYZus{}logit\PYZus{}diversion\PYZus{}ratios}\PY{p}{[}\PY{n}{j}\PY{p}{,}\PY{n}{k}\PY{p}{,}\PY{n}{t}\PY{p}{]} \PY{o}{=} \PY{o}{\PYZhy{}}\PY{l+m+mi}{1}\PY{o}{*}\PY{n}{derivative\PYZus{}matrix}\PY{p}{[}\PY{n}{k}\PY{p}{,}\PY{n}{j}\PY{p}{]}\PY{o}{/}\PY{n}{derivative\PYZus{}matrix}\PY{p}{[}\PY{n}{j}\PY{p}{,}\PY{n}{j}\PY{p}{]}
+        \PY{n}{nested\PYZus{}logit\PYZus{}diversion\PYZus{}ratios}\PY{p}{[}\PY{n}{j}\PY{p}{,}\PY{n}{j}\PY{p}{,}\PY{n}{t}\PY{p}{]} \PY{o}{=} \PY{o}{\PYZhy{}}\PY{l+m+mi}{1}\PY{o}{*}\PY{n}{outside\PYZus{}derivative}\PY{p}{[}\PY{n}{j}\PY{p}{]}\PY{o}{/}\PY{n}{derivative\PYZus{}matrix}\PY{p}{[}\PY{n}{j}\PY{p}{,}\PY{n}{j}\PY{p}{]}
+\end{Verbatim}
+\end{tcolorbox}
+
+
+    \begin{verbatim}
+HBox(children=(IntProgress(value=0, max=600), HTML(value='')))
+    \end{verbatim}
+
+
+    \begin{Verbatim}[commandchars=\\\{\}]
+
+    \end{Verbatim}
+
+    \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\prompt{In}{incolor}{27}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{n}{nested\PYZus{}logit\PYZus{}price\PYZus{}elasticities}\PY{o}{.}\PY{n}{mean}\PY{p}{(}\PY{n}{axis}\PY{o}{=}\PY{l+m+mi}{2}\PY{p}{)}\PY{p}{,} \PY{n}{true\PYZus{}price\PYZus{}elasticities}\PY{o}{.}\PY{n}{mean}\PY{p}{(}\PY{n}{axis}\PY{o}{=}\PY{l+m+mi}{2}\PY{p}{)}
+\end{Verbatim}
+\end{tcolorbox}
+
+            \begin{tcolorbox}[breakable, size=fbox, boxrule=.5pt, pad at break*=1mm, opacityfill=0]
+\prompt{Out}{outcolor}{27}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+(array([[-6.12190672,  1.99361387,  1.14721285,  1.16871821],
+        [ 1.94980523, -6.22209392,  1.23343822,  1.28434919],
+        [ 1.18472154,  1.16184628, -6.06022182,  2.04574024],
+        [ 1.15410091,  1.21673082,  1.99322672, -6.28818366]]),
+ array([[-4.06535006,  1.38543391,  0.80172334,  0.7895892 ],
+        [ 1.27934133, -4.16553436,  0.71112989,  0.71512854],
+        [ 0.73928313,  0.74163481, -4.17726162,  1.3416553 ],
+        [ 0.72070405,  0.7189693 ,  1.30923805, -4.18978309]]))
+\end{Verbatim}
+\end{tcolorbox}
+
+    \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\prompt{In}{incolor}{28}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{n}{nested\PYZus{}logit\PYZus{}diversion\PYZus{}ratios}\PY{o}{.}\PY{n}{mean}\PY{p}{(}\PY{n}{axis}\PY{o}{=}\PY{l+m+mi}{2}\PY{p}{)}\PY{p}{,} \PY{n}{true\PYZus{}diversion\PYZus{}ratios}\PY{o}{.}\PY{n}{mean}\PY{p}{(}\PY{n}{axis}\PY{o}{=}\PY{l+m+mi}{2}\PY{p}{)}
+\end{Verbatim}
+\end{tcolorbox}
+
+            \begin{tcolorbox}[breakable, size=fbox, boxrule=.5pt, pad at break*=1mm, opacityfill=0]
+\prompt{Out}{outcolor}{28}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+(array([[0.28479711, 0.33297753, 0.19134439, 0.19088096],
+        [0.32541291, 0.28728495, 0.19641401, 0.19088814],
+        [0.19547647, 0.20791738, 0.28870153, 0.32231153],
+        [0.19719596, 0.20488804, 0.32444768, 0.28792372]]),
+ array([[0.33115087, 0.30335128, 0.18522023, 0.18027762],
+        [0.32317153, 0.32122579, 0.18063565, 0.17496703],
+        [0.19329289, 0.17575241, 0.32765373, 0.30330097],
+        [0.19192008, 0.17341037, 0.31037504, 0.32429451]]))
+\end{Verbatim}
+\end{tcolorbox}
+
+    \hypertarget{part-5}{%
+\section{Part 5}\label{part-5}}
+
+    \hypertarget{a-demand-side-estimation-only}{%
+\subsection{5.a: Demand-side Estimation
+only}\label{a-demand-side-estimation-only}}
+
+    \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\prompt{In}{incolor}{29}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{c+c1}{\PYZsh{} BLP, Demand\PYZhy{}side estimation only}
+
+\PY{n}{demand\PYZus{}problem} \PY{o}{=} \PY{n}{pyblp}\PY{o}{.}\PY{n}{Problem}\PY{p}{(}
+    \PY{p}{[}
+        \PY{n}{pyblp}\PY{o}{.}\PY{n}{Formulation}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{0 + prices + x + satellite + wired}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}\PY{p}{,}
+        \PY{n}{pyblp}\PY{o}{.}\PY{n}{Formulation}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{0 + satellite + wired}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
+    \PY{p}{]}\PY{p}{,}
+    \PY{n}{observed\PYZus{}data}\PY{p}{[}\PY{p}{[}
+        \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{market\PYZus{}ids}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,}
+        \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{firm\PYZus{}ids}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,}
+        \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{shares}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,}
+        \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{prices}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,}
+        \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{x}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,}
+        \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{satellite}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,}
+        \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{wired}\PY{l+s+s2}{\PYZdq{}}\PY{p}{]}\PY{p}{]}\PY{p}{,}
+    \PY{n}{integration}\PY{o}{=}\PY{n}{pyblp}\PY{o}{.}\PY{n}{Integration}\PY{p}{(}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{product}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{n}{size}\PY{o}{=}\PY{l+m+mi}{9}\PY{p}{)}\PY{p}{,}
+\PY{p}{)}
+\end{Verbatim}
+\end{tcolorbox}
+
+    \begin{Verbatim}[commandchars=\\\{\}]
+Initializing the problem {\ldots}
+Initialized the problem after 00:00:00.
+
+Dimensions:
+=======================================
+ T    N     F     I     K1    K2    MD
+---  ----  ---  -----  ----  ----  ----
+600  2400   4   48600   4     2     3
+=======================================
+
+Formulations:
+=================================================================
+       Column Indices:             0        1        2        3
+-----------------------------  ---------  -----  ---------  -----
+ X1: Linear Characteristics     prices      x    satellite  wired
+X2: Nonlinear Characteristics  satellite  wired
+=================================================================
+    \end{Verbatim}
+
+    \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\prompt{In}{incolor}{30}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{c+c1}{\PYZsh{} we will assume that the random coefficients on satellite and wired are uncorrellated}
+
+\PY{c+c1}{\PYZsh{} this step is going to spit out a lot of text, most of which is not meaningful yet. }
+\PY{c+c1}{\PYZsh{} the first iteration of .solve is only to compute the optimal instruments, and hence these first\PYZhy{}step estimates are not very good}
+
+\PY{n}{demand\PYZus{}problem\PYZus{}w\PYZus{}instruments} \PY{o}{=} \PY{n}{demand\PYZus{}problem}\PY{o}{.}\PY{n}{solve}\PY{p}{(}\PY{n}{sigma}\PY{o}{=}\PY{n}{np}\PY{o}{.}\PY{n}{identity}\PY{p}{(}\PY{l+m+mi}{2}\PY{p}{)}\PY{p}{)}\PY{o}{.}\PY{n}{compute\PYZus{}optimal\PYZus{}instruments}\PY{p}{(}\PY{p}{)}\PY{o}{.}\PY{n}{to\PYZus{}problem}\PY{p}{(}\PY{p}{)}
+\end{Verbatim}
+\end{tcolorbox}
+
+    \begin{Verbatim}[commandchars=\\\{\}]
+Solving the problem {\ldots}
+
+Nonlinear Coefficient Initial Values:
+=======================================
+ Sigma:      satellite        wired
+---------  -------------  -------------
+satellite  +1.000000E+00
+  wired    +0.000000E+00  +1.000000E+00
+=======================================
+
+Nonlinear Coefficient Lower Bounds:
+=======================================
+ Sigma:      satellite        wired
+---------  -------------  -------------
+satellite  +0.000000E+00
+  wired    +0.000000E+00  +0.000000E+00
+=======================================
+
+Nonlinear Coefficient Upper Bounds:
+=======================================
+ Sigma:      satellite        wired
+---------  -------------  -------------
+satellite      +INF
+  wired    +0.000000E+00      +INF
+=======================================
+
+Starting optimization {\ldots}
+
+GMM   Optimization   Objective   Fixed Point  Contraction  Clipped    Objective
+Objective      Projected
+Step   Iterations   Evaluations  Iterations   Evaluations  Shares       Value
+Improvement   Gradient Norm             Theta
+----  ------------  -----------  -----------  -----------  -------
+-------------  -------------  -------------  ----------------------------
+ 1         0             1          4478         13776        0
++1.397861E-27                 +1.276800E-13  +1.000000E+00, +1.000000E+00
+
+Optimization completed after 00:00:02.
+Computing the Hessian and and updating the weighting matrix {\ldots}
+Computed results after 00:00:08.
+
+Problem Results Summary:
+================================================================================
+===============
+GMM     Objective      Projected    Reduced Hessian  Reduced Hessian  Clipped
+Weighting Matrix
+Step      Value      Gradient Norm  Min Eigenvalue   Max Eigenvalue   Shares
+Condition Number
+----  -------------  -------------  ---------------  ---------------  -------
+----------------
+ 1    +1.397861E-27  +1.276800E-13   +1.507973E-06    +7.409371E-06      0
++1.043996E+01
+================================================================================
+===============
+
+Starting optimization {\ldots}
+
+GMM   Optimization   Objective   Fixed Point  Contraction  Clipped    Objective
+Objective      Projected
+Step   Iterations   Evaluations  Iterations   Evaluations  Shares       Value
+Improvement   Gradient Norm             Theta
+----  ------------  -----------  -----------  -----------  -------
+-------------  -------------  -------------  ----------------------------
+ 2         0             1            0           600         0
++1.073274E-27                 +3.029540E-13  +1.000000E+00, +1.000000E+00
+
+Optimization completed after 00:00:01.
+Computing the Hessian and estimating standard errors {\ldots}
+Computed results after 00:00:06.
+
+Problem Results Summary:
+================================================================================
+==================================
+GMM     Objective      Projected    Reduced Hessian  Reduced Hessian  Clipped
+Weighting Matrix  Covariance Matrix
+Step      Value      Gradient Norm  Min Eigenvalue   Max Eigenvalue   Shares
+Condition Number  Condition Number
+----  -------------  -------------  ---------------  ---------------  -------
+----------------  -----------------
+ 2    +1.073274E-27  +3.029540E-13   -2.208656E-05    +8.266331E-06      0
++9.227456E+00      +4.366231E+17
+================================================================================
+==================================
+
+Cumulative Statistics:
+===========================================================================
+Computation  Optimizer  Optimization   Objective   Fixed Point  Contraction
+   Time      Converged   Iterations   Evaluations  Iterations   Evaluations
+-----------  ---------  ------------  -----------  -----------  -----------
+ 00:00:16       Yes          0             4          4478         14376
+===========================================================================
+
+Nonlinear Coefficient Estimates (Robust SEs in Parentheses):
+===========================================
+ Sigma:       satellite          wired
+---------  ---------------  ---------------
+satellite   +1.000000E+00
+           (+4.410576E-03)
+
+  wired     +0.000000E+00    +1.000000E+00
+                            (+4.532765E-03)
+===========================================
+
+Beta Estimates (Robust SEs in Parentheses):
+==================================================================
+    prices              x            satellite          wired
+---------------  ---------------  ---------------  ---------------
+ -4.507325E-01    +8.461436E-01    -8.777418E-02    -1.191342E-01
+(+1.126041E-02)  (+3.082421E-02)  (+1.866351E-02)  (+1.861941E-02)
+==================================================================
+Computing optimal instruments for theta {\ldots}
+Computed optimal instruments after 00:00:01.
+
+Optimal Instrument Results Summary:
+=======================
+Computation  Error Term
+   Time        Draws
+-----------  ----------
+ 00:00:01        1
+=======================
+Re-creating the problem {\ldots}
+Re-created the problem after 00:00:00.
+
+Dimensions:
+=======================================
+ T    N     F     I     K1    K2    MD
+---  ----  ---  -----  ----  ----  ----
+600  2400   4   48600   4     2     6
+=======================================
+
+Formulations:
+=================================================================
+       Column Indices:             0        1        2        3
+-----------------------------  ---------  -----  ---------  -----
+ X1: Linear Characteristics     prices      x    satellite  wired
+X2: Nonlinear Characteristics  satellite  wired
+=================================================================
+    \end{Verbatim}
+
+    \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\prompt{In}{incolor}{31}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{c+c1}{\PYZsh{} now we resolve the problem given the optimal instruments}
+\PY{n}{demand\PYZus{}problem\PYZus{}results} \PY{o}{=} \PY{n}{demand\PYZus{}problem\PYZus{}w\PYZus{}instruments}\PY{o}{.}\PY{n}{solve}\PY{p}{(}\PY{n}{sigma}\PY{o}{=}\PY{l+m+mf}{0.99}\PY{o}{*}\PY{n}{np}\PY{o}{.}\PY{n}{identity}\PY{p}{(}\PY{l+m+mi}{2}\PY{p}{)}\PY{p}{,}\PY{n}{optimization}\PY{o}{=}\PY{n}{pyblp}\PY{o}{.}\PY{n}{Optimization}\PY{p}{(}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{l\PYZhy{}bfgs\PYZhy{}b}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{p}{\PYZob{}}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{maxls}\PY{l+s+s1}{\PYZsq{}}\PY{p}{:} \PY{l+m+mi}{30}\PY{p}{\PYZcb{}}\PY{p}{)}\PY{p}{)}
+\end{Verbatim}
+\end{tcolorbox}
+
+    \begin{Verbatim}[commandchars=\\\{\}]
+Solving the problem {\ldots}
+
+Nonlinear Coefficient Initial Values:
+=======================================
+ Sigma:      satellite        wired
+---------  -------------  -------------
+satellite  +9.900000E-01
+  wired    +0.000000E+00  +9.900000E-01
+=======================================
+
+Nonlinear Coefficient Lower Bounds:
+=======================================
+ Sigma:      satellite        wired
+---------  -------------  -------------
+satellite  +0.000000E+00
+  wired    +0.000000E+00  +0.000000E+00
+=======================================
+
+Nonlinear Coefficient Upper Bounds:
+=======================================
+ Sigma:      satellite        wired
+---------  -------------  -------------
+satellite      +INF
+  wired    +0.000000E+00      +INF
+=======================================
+
+Starting optimization {\ldots}
+
+GMM   Optimization   Objective   Fixed Point  Contraction  Clipped    Objective
+Objective      Projected
+Step   Iterations   Evaluations  Iterations   Evaluations  Shares       Value
+Improvement   Gradient Norm             Theta
+----  ------------  -----------  -----------  -----------  -------
+-------------  -------------  -------------  ----------------------------
+ 1         0             1          4441         13671        0
+-4.871846E+16                 +6.644277E+09  +9.900000E-01, +9.900000E-01
+ 1         0             2          3111         9787         0
+-8.257676E+16  +3.385830E+16  +4.869321E+09  +2.828932E-01, +2.828932E-01
+ 1         1             3            0           600         0
+-4.918336E+16                 +5.388201E-08  +0.000000E+00, +0.000000E+00
+ 1         1             4          3112         9794         0
+-3.109528E+16                 +5.839840E+09  +2.828932E-01, +2.828932E-01
+ 1         1             5          3111         9787         0
+-8.257676E+16                 +4.869321E+09  +2.828932E-01, +2.828932E-01
+ 1         1             6          3109         9791         0
+-4.857029E+16                 +3.903649E+09  +2.828932E-01, +2.828932E-01
+ 1         1             7          3111         9787         0
+-8.257676E+16                 +4.869321E+09  +2.828932E-01, +2.828932E-01
+
+Optimization completed after 00:00:09.
+Computing the Hessian and and updating the weighting matrix {\ldots}
+Computed results after 00:00:07.
+
+Problem Results Summary:
+================================================================================
+===============
+GMM     Objective      Projected    Reduced Hessian  Reduced Hessian  Clipped
+Weighting Matrix
+Step      Value      Gradient Norm  Min Eigenvalue   Max Eigenvalue   Shares
+Condition Number
+----  -------------  -------------  ---------------  ---------------  -------
+----------------
+ 1    -8.257676E+16  +4.869321E+09   -2.349511E+17    -2.874343E+16      0
++8.124302E+16
+================================================================================
+===============
+
+Starting optimization {\ldots}
+
+GMM   Optimization   Objective   Fixed Point  Contraction  Clipped    Objective
+Objective      Projected
+Step   Iterations   Evaluations  Iterations   Evaluations  Shares       Value
+Improvement   Gradient Norm             Theta
+----  ------------  -----------  -----------  -----------  -------
+-------------  -------------  -------------  ----------------------------
+ 2         0             1            0           600         0
++6.537189E-13                 +1.091195E-12  +2.828932E-01, +2.828932E-01
+
+Optimization completed after 00:00:01.
+Computing the Hessian and estimating standard errors {\ldots}
+Computed results after 00:00:05.
+
+Problem Results Summary:
+================================================================================
+==================================
+GMM     Objective      Projected    Reduced Hessian  Reduced Hessian  Clipped
+Weighting Matrix  Covariance Matrix
+Step      Value      Gradient Norm  Min Eigenvalue   Max Eigenvalue   Shares
+Condition Number  Condition Number
+----  -------------  -------------  ---------------  ---------------  -------
+----------------  -----------------
+ 2    +6.537189E-13  +1.091195E-12   -2.784026E-12    +4.671904E-12      0
++2.505258E+17      +1.548412E+17
+================================================================================
+==================================
+
+Cumulative Statistics:
+===========================================================================
+Computation  Optimizer  Optimization   Objective   Fixed Point  Contraction
+   Time      Converged   Iterations   Evaluations  Iterations   Evaluations
+-----------  ---------  ------------  -----------  -----------  -----------
+ 00:00:22       Yes          2            10          19995        63817
+===========================================================================
+
+Nonlinear Coefficient Estimates (Robust SEs in Parentheses):
+===========================================
+ Sigma:       satellite          wired
+---------  ---------------  ---------------
+satellite   +2.828932E-01
+           (+1.012906E+00)
+
+  wired     +0.000000E+00    +2.828932E-01
+                            (+1.039249E+00)
+===========================================
+
+Beta Estimates (Robust SEs in Parentheses):
+==================================================================
+    prices              x            satellite          wired
+---------------  ---------------  ---------------  ---------------
+ +1.217125E+00    +5.763916E-01    -4.337985E+00    -4.407183E+00
+(+2.509104E-02)  (+5.076744E-02)  (+1.455546E-01)  (+1.485866E-01)
+==================================================================
+    \end{Verbatim}
+
+    These estimates are not bad.
+
+    \hypertarget{a-demand-and-supply-estimation}{%
+\subsection{5.a: Demand and Supply
+Estimation}\label{a-demand-and-supply-estimation}}
+
+    \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\prompt{In}{incolor}{32}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{n}{full\PYZus{}problem} \PY{o}{=} \PY{n}{pyblp}\PY{o}{.}\PY{n}{Problem}\PY{p}{(}
+    \PY{p}{[}
+        \PY{n}{pyblp}\PY{o}{.}\PY{n}{Formulation}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{0 + prices + x + satellite + wired}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}\PY{p}{,}
+        \PY{n}{pyblp}\PY{o}{.}\PY{n}{Formulation}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{0 + satellite + wired}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}\PY{p}{,}
+        \PY{n}{pyblp}\PY{o}{.}\PY{n}{Formulation}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{1 + w}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
+    \PY{p}{]}\PY{p}{,}
+    \PY{n}{product\PYZus{}data} \PY{o}{=} \PY{n}{observed\PYZus{}data}\PY{p}{,}
+    \PY{n}{integration}\PY{o}{=}\PY{n}{pyblp}\PY{o}{.}\PY{n}{Integration}\PY{p}{(}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{product}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{n}{size}\PY{o}{=}\PY{l+m+mi}{9}\PY{p}{)}\PY{p}{,}
+    \PY{n}{costs\PYZus{}type}\PY{o}{=}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{log}\PY{l+s+s2}{\PYZdq{}}
+\PY{p}{)}
+\end{Verbatim}
+\end{tcolorbox}
+
+    \begin{Verbatim}[commandchars=\\\{\}]
+Initializing the problem {\ldots}
+Initialized the problem after 00:00:00.
+
+Dimensions:
+===================================================
+ T    N     F     I     K1    K2    K3    MD    MS
+---  ----  ---  -----  ----  ----  ----  ----  ----
+600  2400   4   48600   4     2     2     3     2
+===================================================
+
+Formulations:
+=================================================================
+       Column Indices:             0        1        2        3
+-----------------------------  ---------  -----  ---------  -----
+ X1: Linear Characteristics     prices      x    satellite  wired
+X2: Nonlinear Characteristics  satellite  wired
+X3: Log Cost Characteristics       1        w
+=================================================================
+    \end{Verbatim}
+
+    \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\prompt{In}{incolor}{33}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{c+c1}{\PYZsh{} once again, we construct optimal instruments}
+\PY{n}{full\PYZus{}problem\PYZus{}w\PYZus{}instruments} \PY{o}{=} \PY{n}{full\PYZus{}problem}\PY{o}{.}\PY{n}{solve}\PY{p}{(}\PY{n}{sigma}\PY{o}{=}\PY{n}{np}\PY{o}{.}\PY{n}{identity}\PY{p}{(}\PY{l+m+mi}{2}\PY{p}{)}\PY{p}{,}\PY{n}{beta}\PY{o}{=}\PY{p}{[}\PY{o}{\PYZhy{}}\PY{l+m+mi}{1}\PY{p}{,}\PY{k+kc}{None}\PY{p}{,}\PY{k+kc}{None}\PY{p}{,}\PY{k+kc}{None}\PY{p}{]}\PY{p}{)}\PY{o}{.}\PY{n}{compute\PYZus{}optimal\PYZus{}instruments}\PY{p}{(}\PY{p}{)}\PY{o}{.}\PY{n}{to\PYZus{}problem}\PY{p}{(}\PY{p}{)}
+\end{Verbatim}
+\end{tcolorbox}
+
+    \begin{Verbatim}[commandchars=\\\{\}]
+Solving the problem {\ldots}
+
+Nonlinear Coefficient Initial Values:
+=======================================
+ Sigma:      satellite        wired
+---------  -------------  -------------
+satellite  +1.000000E+00
+  wired    +0.000000E+00  +1.000000E+00
+=======================================
+
+Beta Initial Values:
+==========================================================
+   prices            x          satellite        wired
+-------------  -------------  -------------  -------------
+-1.000000E+00       NAN            NAN            NAN
+==========================================================
+
+Nonlinear Coefficient Lower Bounds:
+=======================================
+ Sigma:      satellite        wired
+---------  -------------  -------------
+satellite  +0.000000E+00
+  wired    +0.000000E+00  +0.000000E+00
+=======================================
+
+Beta Lower Bounds:
+==========================================================
+   prices            x          satellite        wired
+-------------  -------------  -------------  -------------
+    -INF           -INF           -INF           -INF
+==========================================================
+
+Nonlinear Coefficient Upper Bounds:
+=======================================
+ Sigma:      satellite        wired
+---------  -------------  -------------
+satellite      +INF
+  wired    +0.000000E+00      +INF
+=======================================
+
+Beta Upper Bounds:
+==========================================================
+   prices            x          satellite        wired
+-------------  -------------  -------------  -------------
+    +INF           +INF           +INF           +INF
+==========================================================
+
+Starting optimization {\ldots}
+
+GMM   Optimization   Objective   Fixed Point  Contraction  Clipped    Objective
+Objective      Projected
+Step   Iterations   Evaluations  Iterations   Evaluations  Shares       Value
+Improvement   Gradient Norm                     Theta
+----  ------------  -----------  -----------  -----------  -------
+-------------  -------------  -------------
+-------------------------------------------
+ 1         0             1          4478         13776        0
++1.420645E-26                 +2.916005E-11  +1.000000E+00, +1.000000E+00,
+-1.000000E+00
+
+Optimization completed after 00:00:03.
+Computing the Hessian and and updating the weighting matrix {\ldots}
+Computed results after 00:00:20.
+
+Problem Results Summary:
+================================================================================
+===============
+GMM     Objective      Projected    Reduced Hessian  Reduced Hessian  Clipped
+Weighting Matrix
+Step      Value      Gradient Norm  Min Eigenvalue   Max Eigenvalue   Shares
+Condition Number
+----  -------------  -------------  ---------------  ---------------  -------
+----------------
+ 1    +1.420645E-26  +2.916005E-11   -5.950660E-04    +7.196896E-04      0
++1.338489E+01
+================================================================================
+===============
+
+Starting optimization {\ldots}
+
+GMM   Optimization   Objective   Fixed Point  Contraction  Clipped    Objective
+Objective      Projected
+Step   Iterations   Evaluations  Iterations   Evaluations  Shares       Value
+Improvement   Gradient Norm                     Theta
+----  ------------  -----------  -----------  -----------  -------
+-------------  -------------  -------------
+-------------------------------------------
+ 2         0             1            0           600         0
++1.213500E-25                 +1.303812E-11  +1.000000E+00, +1.000000E+00,
+-1.000000E+00
+
+Optimization completed after 00:00:02.
+Computing the Hessian and estimating standard errors {\ldots}
+Computed results after 00:00:15.
+
+Problem Results Summary:
+================================================================================
+==================================
+GMM     Objective      Projected    Reduced Hessian  Reduced Hessian  Clipped
+Weighting Matrix  Covariance Matrix
+Step      Value      Gradient Norm  Min Eigenvalue   Max Eigenvalue   Shares
+Condition Number  Condition Number
+----  -------------  -------------  ---------------  ---------------  -------
+----------------  -----------------
+ 2    +1.213500E-25  +1.303812E-11   -6.052454E-03    +5.830682E-04      0
++7.176547E+01      +1.366273E+18
+================================================================================
+==================================
+
+Cumulative Statistics:
+===========================================================================
+Computation  Optimizer  Optimization   Objective   Fixed Point  Contraction
+   Time      Converged   Iterations   Evaluations  Iterations   Evaluations
+-----------  ---------  ------------  -----------  -----------  -----------
+ 00:00:40       Yes          0             4          4478         14376
+===========================================================================
+
+Nonlinear Coefficient Estimates (Robust SEs in Parentheses):
+===========================================
+ Sigma:       satellite          wired
+---------  ---------------  ---------------
+satellite   +1.000000E+00
+           (+4.250962E-03)
+
+  wired     +0.000000E+00    +1.000000E+00
+                            (+4.192555E-03)
+===========================================
+
+Beta Estimates (Robust SEs in Parentheses):
+==================================================================
+    prices              x            satellite          wired
+---------------  ---------------  ---------------  ---------------
+ -1.000000E+00    +9.090737E-01    +1.357618E+00    +1.341006E+00
+(+8.317201E-03)  (+3.059498E-02)  (+2.117336E-02)  (+2.108796E-02)
+==================================================================
+
+Gamma Estimates (Robust SEs in Parentheses):
+================================
+       1                w
+---------------  ---------------
+ -1.406974E-01    +4.680814E-01
+(+1.955098E-02)  (+1.085774E-02)
+================================
+Computing optimal instruments for theta {\ldots}
+Computed optimal instruments after 00:00:03.
+
+Optimal Instrument Results Summary:
+=================================================
+Computation  Error Term  Fixed Point  Contraction
+   Time        Draws     Iterations   Evaluations
+-----------  ----------  -----------  -----------
+ 00:00:03        1          9494         9494
+=================================================
+Re-creating the problem {\ldots}
+Re-created the problem after 00:00:00.
+
+Dimensions:
+===================================================
+ T    N     F     I     K1    K2    K3    MD    MS
+---  ----  ---  -----  ----  ----  ----  ----  ----
+600  2400   4   48600   4     2     2     7     8
+===================================================
+
+Formulations:
+=================================================================
+       Column Indices:             0        1        2        3
+-----------------------------  ---------  -----  ---------  -----
+ X1: Linear Characteristics     prices      x    satellite  wired
+X2: Nonlinear Characteristics  satellite  wired
+X3: Log Cost Characteristics       1        w
+=================================================================
+    \end{Verbatim}
+
+    \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\prompt{In}{incolor}{34}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{c+c1}{\PYZsh{} and here are the estimation results}
+\PY{n}{full\PYZus{}problem\PYZus{}results} \PY{o}{=} \PY{n}{full\PYZus{}problem\PYZus{}w\PYZus{}instruments}\PY{o}{.}\PY{n}{solve}\PY{p}{(}\PY{n}{sigma}\PY{o}{=}\PY{l+m+mf}{0.9}\PY{o}{*}\PY{n}{np}\PY{o}{.}\PY{n}{identity}\PY{p}{(}\PY{l+m+mi}{2}\PY{p}{)}\PY{p}{,}\PY{n}{beta}\PY{o}{=}\PY{p}{[}\PY{o}{\PYZhy{}}\PY{l+m+mi}{1}\PY{p}{,}\PY{k+kc}{None}\PY{p}{,}\PY{k+kc}{None}\PY{p}{,}\PY{k+kc}{None}\PY{p}{]}\PY{p}{,} \PY{n}{check\PYZus{}optimality}\PY{o}{=}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{both}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
+\end{Verbatim}
+\end{tcolorbox}
+
+    \begin{Verbatim}[commandchars=\\\{\}]
+Solving the problem {\ldots}
+
+Nonlinear Coefficient Initial Values:
+=======================================
+ Sigma:      satellite        wired
+---------  -------------  -------------
+satellite  +9.000000E-01
+  wired    +0.000000E+00  +9.000000E-01
+=======================================
+
+Beta Initial Values:
+==========================================================
+   prices            x          satellite        wired
+-------------  -------------  -------------  -------------
+-1.000000E+00       NAN            NAN            NAN
+==========================================================
+
+Nonlinear Coefficient Lower Bounds:
+=======================================
+ Sigma:      satellite        wired
+---------  -------------  -------------
+satellite  +0.000000E+00
+  wired    +0.000000E+00  +0.000000E+00
+=======================================
+
+Beta Lower Bounds:
+==========================================================
+   prices            x          satellite        wired
+-------------  -------------  -------------  -------------
+    -INF           -INF           -INF           -INF
+==========================================================
+
+Nonlinear Coefficient Upper Bounds:
+=======================================
+ Sigma:      satellite        wired
+---------  -------------  -------------
+satellite      +INF
+  wired    +0.000000E+00      +INF
+=======================================
+
+Beta Upper Bounds:
+==========================================================
+   prices            x          satellite        wired
+-------------  -------------  -------------  -------------
+    +INF           +INF           +INF           +INF
+==========================================================
+
+Starting optimization {\ldots}
+
+GMM   Optimization   Objective   Fixed Point  Contraction  Clipped    Objective
+Objective      Projected
+Step   Iterations   Evaluations  Iterations   Evaluations  Shares       Value
+Improvement   Gradient Norm                     Theta
+----  ------------  -----------  -----------  -----------  -------
+-------------  -------------  -------------
+-------------------------------------------
+ 1         0             1          4336         13321        0
+-2.855162E+02                 +9.659102E+02  +9.000000E-01, +9.000000E-01,
+-1.000000E+00
+ 1         0             2          4336         13295        0
+-4.184583E+03  +3.899067E+03  +1.464040E+03  +8.888484E-01, +8.888484E-01,
+-1.999876E+00
+ 1         0             3          4274         13119        0
++2.238252E+03                 +9.920075E+02  +8.442422E-01, +8.442422E-01,
+-5.999378E+00
+ 1         0             4          4329         13295        0
++1.038995E+04                 +1.309991E+03  +8.834613E-01, +8.834613E-01,
+-2.482895E+00
+ 1         0             5          4337         13292        0
+-8.407922E+02                 +3.796392E+02  +8.888062E-01, +8.888062E-01,
+-2.003663E+00
+ 1         0             6          4336         13295        0
+-4.184583E+03                 +1.464040E+03  +8.888484E-01, +8.888484E-01,
+-1.999876E+00
+ 1         1             7            0           600         0
++4.393448E+08                 +6.001273E+05  +0.000000E+00, +0.000000E+00,
+-1.466040E+03
+ 1         1             8          4329         13284        0
++1.010082E+04                 +1.417132E+03  +8.867007E-01, +8.867007E-01,
+-5.537365E+00
+ 1         1             9          4333         13295        0
+-4.623683E+03  +4.390999E+02  +1.030407E+03  +8.887269E-01, +8.887269E-01,
+-2.200115E+00
+ 1         2            10          4442         13663        0
+-7.730336E+02                 +1.507782E+03  +8.786028E-01, +1.025720E+00,
+-2.753598E+00
+ 1         2            11          4341         13317        0
++6.407188E+03                 +2.506296E+03  +8.885155E-01, +8.915872E-01,
+-2.211671E+00
+ 1         2            12          4335         13305        0
+-1.187810E+04  +7.254420E+03  +3.797859E+02  +8.887268E-01, +8.887274E-01,
+-2.200117E+00
+ 1         3            13          4353         13380        0
+-4.620186E+03                 +1.877459E+03  +8.881199E-01, +8.972040E-01,
+-2.203337E+00
+ 1         3            14          4334         13303        0
+-4.355088E+03                 +2.911085E+03  +8.887268E-01, +8.887278E-01,
+-2.200117E+00
+ 1         3            15          4336         13303        0
+-4.623684E+03                 +1.970713E+03  +8.887268E-01, +8.887274E-01,
+-2.200117E+00
+ 1         3            16          4335         13305        0
+-1.187810E+04                 +3.797859E+02  +8.887268E-01, +8.887274E-01,
+-2.200117E+00
+
+Optimization completed after 00:00:44.
+Computing the Hessian and and updating the weighting matrix {\ldots}
+Computed results after 00:00:20.
+
+Problem Results Summary:
+================================================================================
+===============
+GMM     Objective      Projected    Reduced Hessian  Reduced Hessian  Clipped
+Weighting Matrix
+Step      Value      Gradient Norm  Min Eigenvalue   Max Eigenvalue   Shares
+Condition Number
+----  -------------  -------------  ---------------  ---------------  -------
+----------------
+ 1    -1.187810E+04  +3.797859E+02   -2.719718E+10    +6.320185E+10      0
++5.553615E+18
+================================================================================
+===============
+
+Starting optimization {\ldots}
+
+GMM   Optimization   Objective   Fixed Point  Contraction  Clipped    Objective
+Objective      Projected
+Step   Iterations   Evaluations  Iterations   Evaluations  Shares       Value
+Improvement   Gradient Norm                     Theta
+----  ------------  -----------  -----------  -----------  -------
+-------------  -------------  -------------
+-------------------------------------------
+ 2         0             1            0           600         0
++1.431873E+01                 +8.875149E+01  +8.887268E-01, +8.887274E-01,
+-2.200117E+00
+ 2         0             2          4353         13332        0
++1.171137E+02                 +3.017598E+02  +1.046625E+00, +1.056654E+00,
+-1.227045E+00
+ 2         0             3          4043         12373        0
++3.504647E+00  +1.081408E+01  +5.494750E+00  +9.263405E-01, +9.287298E-01,
+-1.968317E+00
+ 2         1             4          4073         12481        0
++3.367158E+00  +1.374895E-01  +5.270739E+00  +9.381365E-01, +9.431001E-01,
+-1.972367E+00
+ 2         1             5          4196         12890        0
++2.884910E+00  +4.822481E-01  +4.273512E+00  +9.853204E-01, +1.000581E+00,
+-1.988567E+00
+ 2         2             6          4645         14209        0
++2.171413E+00  +7.134969E-01  +1.836328E+00  +1.207614E+00, +1.230418E+00,
+-2.037731E+00
+ 2         3             7          4546         13907        0
++2.115084E+00  +5.632834E-02  +4.114676E-01  +1.166972E+00, +1.170077E+00,
+-2.030503E+00
+ 2         4             8          4599         14044        0
++2.113129E+00  +1.955256E-03  +3.568824E-02  +1.169502E+00, +1.179589E+00,
+-2.031245E+00
+ 2         5             9          4605         14059        0
++2.113105E+00  +2.412179E-05  +7.455956E-03  +1.168982E+00, +1.180300E+00,
+-2.031264E+00
+ 2         6            10          4601         14058        0
++2.113104E+00  +6.821551E-07  +1.822522E-04  +1.168790E+00, +1.180292E+00,
+-2.031252E+00
+ 2         7            11          4605         14056        0
++2.113104E+00  +4.416867E-11  +6.161568E-06  +1.168790E+00, +1.180292E+00,
+-2.031252E+00
+ 2         8            12          4602         14057        0
++2.113104E+00  +1.625367E-13  +1.954205E-08  +1.168790E+00, +1.180292E+00,
+-2.031252E+00
+ 2         9            13          4602         14056        0
++2.113104E+00  +5.240253E-14  +2.852862E-09  +1.168790E+00, +1.180292E+00,
+-2.031252E+00
+
+Optimization completed after 00:00:36.
+Computing the Hessian and estimating standard errors {\ldots}
+Computed results after 00:00:22.
+
+Problem Results Summary:
+================================================================================
+==================================
+GMM     Objective      Projected    Reduced Hessian  Reduced Hessian  Clipped
+Weighting Matrix  Covariance Matrix
+Step      Value      Gradient Norm  Min Eigenvalue   Max Eigenvalue   Shares
+Condition Number  Condition Number
+----  -------------  -------------  ---------------  ---------------  -------
+----------------  -----------------
+ 2    +2.113104E+00  +2.852862E-09   +2.453329E+01    +3.924354E+02      0
++2.591693E+17      +2.872436E+04
+================================================================================
+==================================
+
+Cumulative Statistics:
+===========================================================================
+Computation  Optimizer  Optimization   Objective   Fixed Point  Contraction
+   Time      Converged   Iterations   Evaluations  Iterations   Evaluations
+-----------  ---------  ------------  -----------  -----------  -----------
+ 00:02:02       Yes          14           31         118556       364494
+===========================================================================
+
+Nonlinear Coefficient Estimates (Robust SEs in Parentheses):
+===========================================
+ Sigma:       satellite          wired
+---------  ---------------  ---------------
+satellite   +1.168790E+00
+           (+2.422035E-01)
+
+  wired     +0.000000E+00    +1.180292E+00
+                            (+2.322707E-01)
+===========================================
+
+Beta Estimates (Robust SEs in Parentheses):
+==================================================================
+    prices              x            satellite          wired
+---------------  ---------------  ---------------  ---------------
+ -2.031252E+00    +1.051940E+00    +4.030990E+00    +4.036894E+00
+(+8.741266E-02)  (+4.717634E-02)  (+2.140120E-01)  (+2.153075E-01)
+==================================================================
+
+Gamma Estimates (Robust SEs in Parentheses):
+================================
+       1                w
+---------------  ---------------
+ +4.862138E-01    +2.634093E-01
+(+1.981867E-02)  (+1.109183E-02)
+================================
+    \end{Verbatim}
+
+    These estimates are even better than the previous section. We'll use
+these in the coming sections.
+
+    \hypertarget{b-own-price-elasticities-diversion-ratios}{%
+\subsection{5.b Own-price Elasticities, Diversion
+Ratios}\label{b-own-price-elasticities-diversion-ratios}}
+
+    \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\prompt{In}{incolor}{35}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{n}{estimated\PYZus{}price\PYZus{}elasticities} \PY{o}{=} \PY{n}{full\PYZus{}problem\PYZus{}results}\PY{o}{.}\PY{n}{compute\PYZus{}elasticities}\PY{p}{(}\PY{p}{)}
+\end{Verbatim}
+\end{tcolorbox}
+
+    \begin{Verbatim}[commandchars=\\\{\}]
+Computing elasticities with respect to prices {\ldots}
+Finished after 00:00:01.
+
+    \end{Verbatim}
+
+    \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\prompt{In}{incolor}{36}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{n}{estimated\PYZus{}diversion\PYZus{}ratios} \PY{o}{=} \PY{n}{full\PYZus{}problem\PYZus{}results}\PY{o}{.}\PY{n}{compute\PYZus{}diversion\PYZus{}ratios}\PY{p}{(}\PY{p}{)}
+\end{Verbatim}
+\end{tcolorbox}
+
+    \begin{Verbatim}[commandchars=\\\{\}]
+Computing diversion ratios with respect to prices {\ldots}
+Finished after 00:00:01.
+
+    \end{Verbatim}
+
+    \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\prompt{In}{incolor}{37}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{n}{estimated\PYZus{}own\PYZus{}price\PYZus{}elasticities} \PY{o}{=} \PY{n}{estimated\PYZus{}price\PYZus{}elasticities}\PY{o}{.}\PY{n}{reshape}\PY{p}{(}\PY{n}{T}\PY{p}{,}\PY{n}{J}\PY{p}{,}\PY{n}{J}\PY{p}{)}\PY{o}{.}\PY{n}{mean}\PY{p}{(}\PY{n}{axis}\PY{o}{=}\PY{l+m+mi}{0}\PY{p}{)}
+\end{Verbatim}
+\end{tcolorbox}
+
+    \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\prompt{In}{incolor}{38}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{n}{true\PYZus{}price\PYZus{}elasticities}\PY{o}{.}\PY{n}{mean}\PY{p}{(}\PY{n}{axis}\PY{o}{=}\PY{l+m+mi}{2}\PY{p}{)}\PY{p}{,} \PY{n}{estimated\PYZus{}own\PYZus{}price\PYZus{}elasticities}
+\end{Verbatim}
+\end{tcolorbox}
+
+            \begin{tcolorbox}[breakable, size=fbox, boxrule=.5pt, pad at break*=1mm, opacityfill=0]
+\prompt{Out}{outcolor}{38}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+(array([[-4.06535006,  1.38543391,  0.80172334,  0.7895892 ],
+        [ 1.27934133, -4.16553436,  0.71112989,  0.71512854],
+        [ 0.73928313,  0.74163481, -4.17726162,  1.3416553 ],
+        [ 0.72070405,  0.7189693 ,  1.30923805, -4.18978309]]),
+ array([[-4.05026563,  1.36210624,  0.70040876,  0.66790244],
+        [ 1.50046032, -4.1558555 ,  0.70040876,  0.66790244],
+        [ 0.7378061 ,  0.65818679, -4.16101852,  1.38817984],
+        [ 0.7378061 ,  0.65818679,  1.4468293 , -4.17569613]]))
+\end{Verbatim}
+\end{tcolorbox}
+
+    The estimates are pretty close to the true values
+
+    \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\prompt{In}{incolor}{39}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{n}{estimated\PYZus{}diversion\PYZus{}ratios}\PY{o}{.}\PY{n}{reshape}\PY{p}{(}\PY{p}{(}\PY{n}{T}\PY{p}{,}\PY{n}{J}\PY{p}{,}\PY{n}{J}\PY{p}{)}\PY{p}{)}\PY{o}{.}\PY{n}{mean}\PY{p}{(}\PY{n}{axis}\PY{o}{=}\PY{l+m+mi}{0}\PY{p}{)}
+\end{Verbatim}
+\end{tcolorbox}
+
+            \begin{tcolorbox}[breakable, size=fbox, boxrule=.5pt, pad at break*=1mm, opacityfill=0]
+\prompt{Out}{outcolor}{39}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+array([[0.32909482, 0.32544548, 0.17501464, 0.17044505],
+       [0.3455732 , 0.3188287 , 0.17046779, 0.16513031],
+       [0.18282689, 0.16629782, 0.3246221 , 0.32625318],
+       [0.18145558, 0.16389933, 0.33358963, 0.32105546]])
+\end{Verbatim}
+\end{tcolorbox}
+
+    \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\prompt{In}{incolor}{40}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{n}{true\PYZus{}diversion\PYZus{}ratios}\PY{o}{.}\PY{n}{mean}\PY{p}{(}\PY{n}{axis}\PY{o}{=}\PY{l+m+mi}{2}\PY{p}{)}
+\end{Verbatim}
+\end{tcolorbox}
+
+            \begin{tcolorbox}[breakable, size=fbox, boxrule=.5pt, pad at break*=1mm, opacityfill=0]
+\prompt{Out}{outcolor}{40}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+array([[0.33115087, 0.30335128, 0.18522023, 0.18027762],
+       [0.32317153, 0.32122579, 0.18063565, 0.17496703],
+       [0.19329289, 0.17575241, 0.32765373, 0.30330097],
+       [0.19192008, 0.17341037, 0.31037504, 0.32429451]])
+\end{Verbatim}
+\end{tcolorbox}
+
+    These look reasonably close as well.
+
+    \hypertarget{part-6}{%
+\section{Part 6}\label{part-6}}
+
+    \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\prompt{In}{incolor}{41}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{c+c1}{\PYZsh{} merge firms 1 and 2}
+\PY{n}{observed\PYZus{}data}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{merger\PYZus{}1\PYZus{}ids}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]} \PY{o}{=} \PY{n}{observed\PYZus{}data}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{firm\PYZus{}ids}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}\PY{o}{.}\PY{n}{replace}\PY{p}{(}\PY{l+m+mi}{2}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)}
+
+\PY{c+c1}{\PYZsh{} merge firms 1 and 3}
+\PY{n}{observed\PYZus{}data}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{merger\PYZus{}2\PYZus{}ids}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]} \PY{o}{=} \PY{n}{observed\PYZus{}data}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{firm\PYZus{}ids}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}\PY{o}{.}\PY{n}{replace}\PY{p}{(}\PY{l+m+mi}{3}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)}
+\end{Verbatim}
+\end{tcolorbox}
+
+    \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\prompt{In}{incolor}{42}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{n}{marginal\PYZus{}costs} \PY{o}{=} \PY{n}{full\PYZus{}problem\PYZus{}results}\PY{o}{.}\PY{n}{compute\PYZus{}costs}\PY{p}{(}\PY{p}{)}
+
+\PY{n}{merger\PYZus{}1\PYZus{}prices} \PY{o}{=} \PY{n}{full\PYZus{}problem\PYZus{}results}\PY{o}{.}\PY{n}{compute\PYZus{}prices}\PY{p}{(}
+    \PY{n}{firm\PYZus{}ids}\PY{o}{=}\PY{n}{observed\PYZus{}data}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{merger\PYZus{}1\PYZus{}ids}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}\PY{p}{,}
+    \PY{n}{costs}\PY{o}{=}\PY{n}{marginal\PYZus{}costs}
+\PY{p}{)}
+
+\PY{n}{merger\PYZus{}2\PYZus{}prices} \PY{o}{=} \PY{n}{full\PYZus{}problem\PYZus{}results}\PY{o}{.}\PY{n}{compute\PYZus{}prices}\PY{p}{(}
+    \PY{n}{firm\PYZus{}ids}\PY{o}{=}\PY{n}{observed\PYZus{}data}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{merger\PYZus{}2\PYZus{}ids}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}\PY{p}{,}
+    \PY{n}{costs}\PY{o}{=}\PY{n}{marginal\PYZus{}costs}
+\PY{p}{)}
+\end{Verbatim}
+\end{tcolorbox}
+
+    \begin{Verbatim}[commandchars=\\\{\}]
+Computing marginal costs {\ldots}
+Finished after 00:00:01.
+
+Solving for equilibrium prices {\ldots}
+Finished after 00:00:03.
+
+Solving for equilibrium prices {\ldots}
+Finished after 00:00:02.
+
+    \end{Verbatim}
+
+    \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\prompt{In}{incolor}{43}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{n}{np}\PY{o}{.}\PY{n}{mean}\PY{p}{(}\PY{n}{eq\PYZus{}prices}\PY{p}{,} \PY{n}{axis}\PY{o}{=}\PY{l+m+mi}{1}\PY{p}{)}
+\end{Verbatim}
+\end{tcolorbox}
+
+            \begin{tcolorbox}[breakable, size=fbox, boxrule=.5pt, pad at break*=1mm, opacityfill=0]
+\prompt{Out}{outcolor}{43}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+array([2.73266213, 2.71653207, 2.76078363, 2.73913598])
+\end{Verbatim}
+\end{tcolorbox}
+
+    \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\prompt{In}{incolor}{44}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{c+c1}{\PYZsh{} relative price changes, merging 1 and 2}
+\PY{n}{np}\PY{o}{.}\PY{n}{mean}\PY{p}{(}\PY{n}{merger\PYZus{}1\PYZus{}prices}\PY{o}{.}\PY{n}{reshape}\PY{p}{(}\PY{p}{(}\PY{n}{T}\PY{p}{,}\PY{n}{J}\PY{p}{)}\PY{p}{)}\PY{p}{,}\PY{n}{axis}\PY{o}{=}\PY{l+m+mi}{0}\PY{p}{)}
+\end{Verbatim}
+\end{tcolorbox}
+
+            \begin{tcolorbox}[breakable, size=fbox, boxrule=.5pt, pad at break*=1mm, opacityfill=0]
+\prompt{Out}{outcolor}{44}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+array([2.97945002, 2.99353235, 2.77124927, 2.74875349])
+\end{Verbatim}
+\end{tcolorbox}
+
+    \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\prompt{In}{incolor}{45}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{c+c1}{\PYZsh{} relative price changes, merging 1 and 3}
+\PY{n}{np}\PY{o}{.}\PY{n}{mean}\PY{p}{(}\PY{n}{merger\PYZus{}2\PYZus{}prices}\PY{o}{.}\PY{n}{reshape}\PY{p}{(}\PY{p}{(}\PY{n}{T}\PY{p}{,}\PY{n}{J}\PY{p}{)}\PY{p}{)}\PY{p}{,}\PY{n}{axis}\PY{o}{=}\PY{l+m+mi}{0}\PY{p}{)}
+\end{Verbatim}
+\end{tcolorbox}
+
+            \begin{tcolorbox}[breakable, size=fbox, boxrule=.5pt, pad at break*=1mm, opacityfill=0]
+\prompt{Out}{outcolor}{45}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+array([2.84694606, 2.72847439, 2.8831668 , 2.75133819])
+\end{Verbatim}
+\end{tcolorbox}
+
+    \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\prompt{In}{incolor}{46}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{n}{reduction\PYZus{}factors} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{concatenate}\PY{p}{(}\PY{p}{[}\PY{l+m+mf}{0.85}\PY{o}{*}\PY{n}{np}\PY{o}{.}\PY{n}{ones}\PY{p}{(}\PY{p}{[}\PY{n}{T}\PY{p}{,}\PY{l+m+mi}{2}\PY{p}{]}\PY{p}{)}\PY{p}{,}\PY{n}{np}\PY{o}{.}\PY{n}{ones}\PY{p}{(}\PY{p}{[}\PY{n}{T}\PY{p}{,}\PY{l+m+mi}{2}\PY{p}{]}\PY{p}{)}\PY{p}{]}\PY{p}{,}\PY{n}{axis}\PY{o}{=}\PY{l+m+mi}{1}\PY{p}{)}\PY{o}{.}\PY{n}{reshape}\PY{p}{(}\PY{p}{(}\PY{n}{T}\PY{o}{*}\PY{n}{J}\PY{p}{,}\PY{l+m+mi}{1}\PY{p}{)}\PY{p}{)}
+\PY{n}{reduced\PYZus{}costs} \PY{o}{=} \PY{n}{marginal\PYZus{}costs} \PY{o}{*} \PY{n}{reduction\PYZus{}factors}
+
+
+\PY{n}{merger\PYZus{}1\PYZus{}prices\PYZus{}w\PYZus{}cost\PYZus{}reduction} \PY{o}{=} \PY{n}{full\PYZus{}problem\PYZus{}results}\PY{o}{.}\PY{n}{compute\PYZus{}prices}\PY{p}{(}
+    \PY{n}{firm\PYZus{}ids}\PY{o}{=}\PY{n}{observed\PYZus{}data}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{merger\PYZus{}1\PYZus{}ids}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}\PY{p}{,}
+    \PY{n}{costs}\PY{o}{=}\PY{n}{reduced\PYZus{}costs}
+\PY{p}{)}
+\end{Verbatim}
+\end{tcolorbox}
+
+    \begin{Verbatim}[commandchars=\\\{\}]
+Solving for equilibrium prices {\ldots}
+Finished after 00:00:03.
+
+    \end{Verbatim}
+
+    \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\prompt{In}{incolor}{47}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{c+c1}{\PYZsh{} post\PYZhy{}merger relative price changes, 1 and 2 with marginal cost reduction}
+\PY{n}{np}\PY{o}{.}\PY{n}{mean}\PY{p}{(}\PY{n}{merger\PYZus{}1\PYZus{}prices\PYZus{}w\PYZus{}cost\PYZus{}reduction}\PY{o}{.}\PY{n}{reshape}\PY{p}{(}\PY{p}{(}\PY{n}{T}\PY{p}{,}\PY{n}{J}\PY{p}{)}\PY{p}{)}\PY{p}{,}\PY{n}{axis}\PY{o}{=}\PY{l+m+mi}{0}\PY{p}{)}
+\end{Verbatim}
+\end{tcolorbox}
+
+            \begin{tcolorbox}[breakable, size=fbox, boxrule=.5pt, pad at break*=1mm, opacityfill=0]
+\prompt{Out}{outcolor}{47}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+array([2.78201464, 2.79398463, 2.76110894, 2.73900857])
+\end{Verbatim}
+\end{tcolorbox}
+
+    \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\prompt{In}{incolor}{48}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{n}{pre\PYZus{}merger\PYZus{}surpluses} \PY{o}{=} \PY{n}{full\PYZus{}problem\PYZus{}results}\PY{o}{.}\PY{n}{compute\PYZus{}consumer\PYZus{}surpluses}\PY{p}{(}\PY{p}{)}
+\PY{n}{post\PYZus{}merger\PYZus{}surpluses} \PY{o}{=} \PY{n}{full\PYZus{}problem\PYZus{}results}\PY{o}{.}\PY{n}{compute\PYZus{}consumer\PYZus{}surpluses}\PY{p}{(}\PY{n}{prices}\PY{o}{=}\PY{n}{merger\PYZus{}1\PYZus{}prices\PYZus{}w\PYZus{}cost\PYZus{}reduction}\PY{p}{)}
+\end{Verbatim}
+\end{tcolorbox}
+
+    \begin{Verbatim}[commandchars=\\\{\}]
+Computing consumer surpluses with the equation that assumes away nonlinear
+income effects {\ldots}
+Finished after 00:00:01.
+
+Computing consumer surpluses with the equation that assumes away nonlinear
+income effects {\ldots}
+Finished after 00:00:01.
+
+    \end{Verbatim}
+
+    \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\prompt{In}{incolor}{49}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{c+c1}{\PYZsh{} assuming measure of consumers in each market is 1, the net surpluses are just the sums}
+\PY{c+c1}{\PYZsh{} this is the net effect on consumer welfare}
+\PY{n}{np}\PY{o}{.}\PY{n}{sum}\PY{p}{(}\PY{n}{post\PYZus{}merger\PYZus{}surpluses} \PY{o}{\PYZhy{}} \PY{n}{pre\PYZus{}merger\PYZus{}surpluses}\PY{p}{)}
+\end{Verbatim}
+\end{tcolorbox}
+
+            \begin{tcolorbox}[breakable, size=fbox, boxrule=.5pt, pad at break*=1mm, opacityfill=0]
+\prompt{Out}{outcolor}{49}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+-6.5718246112984176
+\end{Verbatim}
+\end{tcolorbox}
+
+    \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\prompt{In}{incolor}{50}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{n}{post\PYZus{}merger\PYZus{}shares} \PY{o}{=} \PY{n}{full\PYZus{}problem\PYZus{}results}\PY{o}{.}\PY{n}{compute\PYZus{}shares}\PY{p}{(}\PY{n}{merger\PYZus{}1\PYZus{}prices\PYZus{}w\PYZus{}cost\PYZus{}reduction}\PY{p}{)}
+\PY{n}{pre\PYZus{}merger\PYZus{}profits} \PY{o}{=} \PY{n}{full\PYZus{}problem\PYZus{}results}\PY{o}{.}\PY{n}{compute\PYZus{}profits}\PY{p}{(}\PY{p}{)}
+\PY{n}{post\PYZus{}merger\PYZus{}profits} \PY{o}{=} \PY{n}{full\PYZus{}problem\PYZus{}results}\PY{o}{.}\PY{n}{compute\PYZus{}profits}\PY{p}{(}\PY{n}{merger\PYZus{}1\PYZus{}prices\PYZus{}w\PYZus{}cost\PYZus{}reduction}\PY{p}{,} \PY{n}{post\PYZus{}merger\PYZus{}shares}\PY{p}{,} \PY{n}{reduced\PYZus{}costs}\PY{p}{)}
+\end{Verbatim}
+\end{tcolorbox}
+
+    \begin{Verbatim}[commandchars=\\\{\}]
+Computing shares {\ldots}
+Finished after 00:00:00.
+
+Computing profits {\ldots}
+Finished after 00:00:01.
+
+Computing profits {\ldots}
+Finished after 00:00:00.
+
+    \end{Verbatim}
+
+    \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\prompt{In}{incolor}{51}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{c+c1}{\PYZsh{} once again assuming measure 1 of consumers in each market}
+\PY{c+c1}{\PYZsh{} net change in profits}
+\PY{n}{np}\PY{o}{.}\PY{n}{sum}\PY{p}{(}\PY{n}{post\PYZus{}merger\PYZus{}profits} \PY{o}{\PYZhy{}} \PY{n}{pre\PYZus{}merger\PYZus{}profits}\PY{p}{)}
+\end{Verbatim}
+\end{tcolorbox}
+
+            \begin{tcolorbox}[breakable, size=fbox, boxrule=.5pt, pad at break*=1mm, opacityfill=0]
+\prompt{Out}{outcolor}{51}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+69.19100664228262
+\end{Verbatim}
+\end{tcolorbox}
+
+    \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\prompt{In}{incolor}{52}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{c+c1}{\PYZsh{} welfare change}
+\PY{n}{np}\PY{o}{.}\PY{n}{sum}\PY{p}{(}\PY{n}{post\PYZus{}merger\PYZus{}surpluses} \PY{o}{\PYZhy{}} \PY{n}{pre\PYZus{}merger\PYZus{}surpluses}\PY{p}{)} \PY{o}{+} \PY{n}{np}\PY{o}{.}\PY{n}{sum}\PY{p}{(}\PY{n}{post\PYZus{}merger\PYZus{}profits} \PY{o}{\PYZhy{}} \PY{n}{pre\PYZus{}merger\PYZus{}profits}\PY{p}{)}
+\end{Verbatim}
+\end{tcolorbox}
+
+            \begin{tcolorbox}[breakable, size=fbox, boxrule=.5pt, pad at break*=1mm, opacityfill=0]
+\prompt{Out}{outcolor}{52}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+62.6191820309842
+\end{Verbatim}
+\end{tcolorbox}
+
+
+
+    % Add a bibliography block to the postdoc

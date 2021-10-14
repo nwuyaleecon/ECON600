@@ -13,6 +13,8 @@
 \usepackage{setspace}
 	% package that allows you to change spacing
 
+\input{code_macros}
+
 \onehalfspacing
 	% text become 1.5 spaced
 
@@ -93,12 +95,53 @@ Then the derivatives are
 \item See code.
 \end{enumerate}
 \paragraph{(3)} See code.
-\paragraph{(4)}
+\paragraph{(4)} I am pretty happy with the variation provided by these simulated values.
 \section*{4: Misspecified Models}
-\paragraph{(5)}
-\paragraph{(6)}
+\paragraph{(5)} See code.
+\paragraph{(6)} See code.
 \paragraph{(7)}
-\paragraph{(8)} 
+\paragraph{(8)} We analytically compute the derivatives in the nested logit model. Let
+\[ \delta_{jt} = \beta^{(1)} x_{jt} + \overline{\beta^{(2)}}satellite_j +\overline{\beta^{(3)}}wired_j + \alpha p_{jt} \]
+Then
+\[ s_{j/ g}(\delta_{jt}, \sigma_g) = \frac{\exp(\delta_{jt} / (1 - \sigma_g))}{\sum_{i \in \mathcal{J}_g} \exp(\delta_{it} / (1 - \sigma_g))} \]
+The own-price derivative is:
+\[ \frac{\partial}{\partial p_j}s_{j/ g}(\delta_{jt}, \sigma_g) = \frac{\left(\sum_{i \in \mathcal{J}_g} \exp(\delta_{it} / (1 - \sigma_g)) \right)\frac{\alpha}{1 - \sigma_g}\exp(\delta_{jt} / (1 - \sigma_g)) - \frac{\alpha}{1-\sigma_g}\left( \exp(\delta_{jt} / (1 - \sigma_g))\right)^2}{\left(\sum_{i \in \mathcal{J}_g} \exp(\delta_{it} / (1 - \sigma_g)) \right)^2} \]
+\[ = \frac{\alpha}{1 - \sigma_g}s_{j/ g}(\delta_{jt}, \sigma_g)  \frac{\left(\sum_{i \in \mathcal{J}_g} \exp(\delta_{it} / (1 - \sigma_g)) \right) -\left( \exp(\delta_{jt} / (1 - \sigma_g))\right)}{\left(\sum_{i \in \mathcal{J}_g} \exp(\delta_{it} / (1 - \sigma_g)) \right)}  = \frac{\alpha}{1 - \sigma_g}s_{j/ g}(\delta_{jt}, \sigma_g) (1 - s_{j/ g}(\delta_{jt}, \sigma_g)) \]
+The within-group price derivative is:
+\[ \frac{\partial}{\partial p_k}s_{j/ g}(\delta_{jt}, \sigma_g) = -\frac{\alpha}{1-\sigma_g}\frac{\exp(\delta_{jt} / (1 - \sigma_g))\exp(\delta_{kt} / (1 - \sigma_g))}{\left( \sum_{i \in \mathcal{J}_g} \exp(\delta_{it} / (1 - \sigma_g))\right)^2}\]
+\[ =-\frac{\alpha}{1-\sigma_g} s_{j/ g}(\delta_{t}, \sigma_g)s_{k / g}(\delta_{t}, \sigma_g) \]
+The outside-group price derivative of the within-group share is 0. Let $\delta_t$ denote the vector of $\delta_jt$ for all $j$, and let $\sigma$ denote the vector of $\sigma_g$ for all $g$. The group shares are given by
+\[ s_{g}(\delta_t, \sigma) = \frac{\left(\sum_{i \in \mathcal{J}_g} \exp(\delta_{it} / (1 - \sigma_g))\right)^{1-\sigma_g}}{1 + \sum_{g'}\left(\sum_{i \in \mathcal{J}_{g'}} \exp(\delta_{it} / (1 - \sigma_{g'}))\right)^{1 - \sigma_{g'}}} \]
+The within-group price derivative is given by:
+\[ \frac{\partial}{\partial p_j}s_{g}(\delta_t, \sigma) = \frac{(1-\sigma_g)\left(\sum_{i \in \mathcal{J}_g} \exp(\delta_{it} / (1 - \sigma_g))\right)^{-\sigma_g} \frac{\alpha}{1-\sigma_g}\exp(\delta_{jt} / (1 - \sigma_g))}{1 + \sum_{g'}\left(\sum_{i \in \mathcal{J}_{g'}} \exp(\delta_{it} / (1 - \sigma_{g'}))\right)^{1 - \sigma_{g'}}} \]
+\[ - \frac{\left(\sum_{i \in \mathcal{J}_g} \exp(\delta_{it} / (1 - \sigma_g))\right)^{1-\sigma_g}(1-\sigma_g)\left(\sum_{i \in \mathcal{J}_g} \exp(\delta_{it} / (1 - \sigma_g))\right)^{-\sigma_g}\frac{\alpha}{1-\sigma_g}\exp(\delta_{jt} / (1 - \sigma_g))}{\left(1 + \sum_{g'}\left(\sum_{i \in \mathcal{J}_{g'}} \exp(\delta_{it} / (1 - \sigma_{g'}))\right)^{1 - \sigma_{g'}}\right)^2}  \]
+\[ = \frac{\alpha \left(\sum_{i \in \mathcal{J}_g} \exp(\delta_{it} / (1 - \sigma_g))\right)^{-\sigma_g} \exp(\delta_{jt} / (1 - \sigma_g))}{1 + \sum_{g'}\left(\sum_{i \in \mathcal{J}_{g'}} \exp(\delta_{it} / (1 - \sigma_{g'}))\right)^{1 - \sigma_{g'}}}(1-s_g(\delta_t, \sigma)) \]
+\[ = \frac{\alpha s_g(\delta_t, \sigma) \exp(\delta_{jt} / (1 - \sigma_g))}{\sum_{i \in \mathcal{J}_g} \exp(\delta_{it} / (1 - \sigma_g))}(1-s_g(\delta_t, \sigma)) \]
+\[ = \alpha s_g(\delta_t, \sigma) s_{j/ g}(\delta_{jt}, \sigma_g)(1-s_g(\delta_t, \sigma)) \]
+\[ = \alpha s_j(\delta_t, \sigma)(1-s_g(\delta_t, \sigma)) \]
+The outside-group price derivative
+\[ \frac{\partial}{\partial p_k}s_{g}(\delta_t, \sigma) =  - s_{g}(\delta_t, \sigma)\frac{\alpha \left(\sum_{i \in \mathcal{J}_{g_k}} \exp(\delta_{it} / (1 - \sigma_{g_k}))\right)^{-\sigma_{g_k}} \exp(\delta_{kt} / (1 - \sigma_{g_k}))}{1 + \sum_{g'}\left(\sum_{i \in \mathcal{J}_{g'}} \exp(\delta_{it} / (1 - \sigma_{g'}))\right)^{1 - \sigma_{g'}}} \]
+\[=- s_{g}(\delta_t, \sigma)\frac{\alpha s_{g_k}(\delta_t, \sigma) \exp(\delta_{kt} / (1 - \sigma_{g_k}))}{\sum_{i \in \mathcal{J}_{g_k}} \exp(\delta_{it} / (1 - \sigma_{g_k}))} \]
+\[=- \alpha s_{g}(\delta_t, \sigma)s_{g_k}(\delta_t, \sigma) s_{k/ g}(\delta_{jt}, \sigma_g) \]
+\[=- \alpha s_{g}(\delta_t, \sigma)s_{k}(\delta_t, \sigma) \]
+The market share function is then given by
+\[ s_j(\delta_t, \sigma) = s_{g}(\delta_t, \sigma)s_{j/ g}(\delta_{jt}, \sigma_g) \]
+\[ \frac{\partial }{\partial p}s_j(\delta_t, \sigma) = \frac{\partial }{\partial p}s_{g}(\delta_t, \sigma)s_{j/ g}(\delta_{jt}, \sigma_g)  + s_{g}(\delta_t, \sigma)\frac{\partial }{\partial p}s_{j/ g}(\delta_{jt}, \sigma_g)\]
+The own-price derivative is then:
+\[ \frac{\partial }{\partial p_j}s_j(\delta_t, \sigma) = \alpha s_j(\delta_t, \sigma)(1-s_g(\delta_t, \sigma)) s_{j/ g}(\delta_{jt}, \sigma_g)+ s_{g}(\delta_t, \sigma)\frac{\alpha}{1 - \sigma_g}s_{j/ g}(\delta_{jt}, \sigma_g) (1 - s_{j/ g}(\delta_{jt}, \sigma_g)) \]
+\[= \alpha s_j(\delta_t, \sigma)(1-s_g(\delta_t, \sigma)) s_{j/ g}(\delta_{jt}, \sigma_g)+ s_{j}(\delta_t, \sigma)\frac{\alpha}{1 - \sigma_g}(1 - s_{j/ g}(\delta_{jt}, \sigma_g)) \]
+\[= \alpha s_j(\delta_t, \sigma)\left( (1-s_g(\delta_t, \sigma)) s_{j/ g}(\delta_{jt}, \sigma_g)+ \frac{1}{1 - \sigma_g}(1 - s_{j/ g}(\delta_{jt}, \sigma_g))\right) \]
+\[= \frac{\alpha s_j(\delta_t, \sigma)}{1-\sigma_g}\left( (1-\sigma_g)s_{j/ g}(\delta_{jt}, \sigma_g)-(1-\sigma_g)s_j(\delta_t, \sigma) + 1 - s_{j/ g}(\delta_{jt}, \sigma_g)\right) \]
+\[= \frac{\alpha s_j(\delta_t, \sigma)}{1-\sigma_g}\left( 1 -\sigma_g s_{j/ g}(\delta_{jt}, \sigma_g)-(1-\sigma_g)s_j(\delta_t, \sigma)  \right) \]
+The within-group price derivative is
+\[ \frac{\partial }{\partial p_k}s_j(\delta_t, \sigma) = \alpha s_k(\delta_t, \sigma)(1-s_g(\delta_t, \sigma))s_{j/ g}(\delta_{jt}, \sigma_g)  - s_{g}(\delta_t, \sigma)\frac{\alpha}{1-\sigma_g} s_{j/ g}(\delta_{t}, \sigma_g)s_{k / g}(\delta_{t}, \sigma_g)\]
+\[= \frac{\alpha}{1-\sigma_g} s_k(\delta_t, \sigma)\left( (1-\sigma_g)s_{j/ g}(\delta_{jt}, \sigma_g)-(1-\sigma_g)s_j(\delta_t, \sigma)  -  s_{j/ g}(\delta_{t}, \sigma_g)\right)\]
+\[= - \frac{\alpha}{1-\sigma_g} s_k(\delta_t, \sigma)\left( \sigma_g s_{j/ g}(\delta_{jt}, \sigma_g)+ (1-\sigma_g)s_j(\delta_t, \sigma)  \right)\]
+The outside-group price derivative is
+\[\frac{\partial }{\partial p_k}s_j(\delta_t, \sigma) =- \alpha s_{j}(\delta_t, \sigma)s_{k}(\delta_t, \sigma) \]
+
+And the outside-option derivative is
+\[ \frac{\partial}{\partial p_j} s_0(\delta_t, \sigma) = - \alpha s_0(\delta_t, \sigma) s_j(\delta_t, \sigma)\]
 
 \section*{5: Estimating the Correctly Specified Model}
 (Note: some weird behavior exists because the parameters for $satellite$ and $wired$ are collinear).
@@ -124,5 +167,8 @@ Then the derivatives are
 \paragraph{(14)} A reduction in marginal cost means that prices may not necessarily increase as a result of the merger, and hence can potentially improve efficiency; the merged firm can earn more profits to outweigh any consumer welfare decrease.
 \paragraph{(15)} See Table 6.1 for the post-merger prices with cost reduction. The net consumer welfare actually decreases as a result of the merger by $6.8384$. However, the firm manages to earn significantly more profits: specifically, the firm earns $69.3230$ more in profits. Hence the overall predicted welfare change is $62.4846$. We need to assume the markets have uniform measure of consumers here because previously all the computations were performed using in-market shares, which has no reliance on the size of the market. For net consumer welfare and profits, we have to aggregate across markets, and hence we need assumptions on the measure of consumers in each market.
 \input{table6_1}
+
+\section*{Appendix: Code}
+\input{merger_code}
 \end{document}
 	% line of code telling latex that your document is ending. If you leave this out, you'll get an error
